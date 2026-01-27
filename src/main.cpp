@@ -6,9 +6,17 @@
 
 int main()
 {
-    Matrix mat1({4,4}, 1);
-    Matrix mat2({4,4}, 1);
+    Classificator c;
 
-    Matrix mat3 = mat1 * mat2;
-    mat3.print();
+    c.add_layer(16, Activation::ReLU);
+    c.add_layer(16, Activation::ReLU);
+    c.add_layer(10, Activation::Softmax);
+    c.configure_loss_function(Loss::Cross_Entropy);
+    c.load_csv("../datasets/mnist_train.csv");
+
+    c.initalise();
+
+    c.fit(1);
+
+
 }

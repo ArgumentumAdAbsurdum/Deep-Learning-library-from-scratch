@@ -324,7 +324,10 @@ CMakeFiles/deeplearninglibary.dir/src/CPU/modelCPU.cpp.o: \
  /usr/include/c++/13/bits/locale_facets_nonio.tcc \
  /usr/include/c++/13/bits/locale_conv.h \
  /usr/include/c++/13/bits/quoted_string.h /usr/include/c++/13/sstream \
- /usr/include/c++/13/bits/sstream.tcc /usr/include/c++/13/fstream \
+ /usr/include/c++/13/bits/sstream.tcc \
+ /home/lucbr/Documents/DeepLearningLibary/headers/CPU/activationCPU.h \
+ /home/lucbr/Documents/DeepLearningLibary/headers/activation.h \
+ /usr/include/c++/13/fstream \
  /usr/include/x86_64-linux-gnu/c++/13/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/13/bits/c++io.h \
  /usr/include/c++/13/bits/fstream.tcc

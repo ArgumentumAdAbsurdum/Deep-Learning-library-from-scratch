@@ -4,15 +4,24 @@
 #include <stdexcept>
 #include <string>
 
+
+
 matrix<CPU>::matrix()
-{
-    
-}
+    : r(0), c(0), n(0), data(nullptr)
+{}
+
 
 matrix<CPU>::matrix(const matrix<CPU> &other) : c(other.c), r(other.r), shape(other.shape), n(other.n)
 {
+    
     this->data = (float*) _mm_malloc(n * sizeof(float), ALIGN);
     std::copy(other.data, other.data + n, data);
+}
+
+matrix<CPU>::matrix(matrix<CPU> &&other) noexcept
+    : r(other.r), c(other.c), n(other.n), shape(std::move(other.shape)), data(other.data)
+{
+    other.data = nullptr;
 }
 
 matrix<CPU>::matrix(const std::vector<size_t> &_shape) :shape(_shape), r(_shape[0]), c(_shape[1])
@@ -20,6 +29,18 @@ matrix<CPU>::matrix(const std::vector<size_t> &_shape) :shape(_shape), r(_shape[
     this->n = r * c;
     this->data = (float*) _mm_malloc(n * sizeof(float), ALIGN);
     if (!data) throw std::bad_alloc();
+}
+
+matrix<CPU>::matrix(const std::vector<size_t> &_shape, std::vector<float> &values) : shape(_shape), r(_shape[0]), c(_shape[1])
+{
+    n = r * c;
+    if(values.size() != n)
+        throw std::runtime_error("Vector size does not match matrix size");
+
+    data = (float*) _mm_malloc(n * sizeof(float), ALIGN);
+    if(!data) throw std::bad_alloc();
+
+    std::copy(values.begin(), values.end(), data);
 }
 
 matrix<CPU>::matrix(const std::vector<size_t> &shape, float val) : matrix<CPU>(shape)
@@ -55,7 +76,8 @@ matrix<CPU>::matrix(const std::vector<size_t> &shape, float start, float end) : 
 
 matrix<CPU>::~matrix()
 {
-    if(data) _mm_free(data);
+    if(data) 
+        _mm_free(data);
 }
 
 std::vector<size_t> matrix<CPU>::get_shape() const
@@ -89,7 +111,43 @@ float *matrix<CPU>::raw() const
 }
 
 
+
 // --------------------------------- OPERATOR ------------------------------
+
+matrix<CPU> &matrix<CPU>::operator=(const matrix<CPU> &other)
+{
+    if(this != &other) {
+        _mm_free(data);                    
+        r = other.r;
+        c = other.c;
+        n = other.n;
+        shape = other.shape;
+        data = (float*) _mm_malloc(n * sizeof(float), ALIGN);
+        std::copy(other.data, other.data + n, data);  
+    }
+    return *this;
+}
+
+matrix<CPU> &matrix<CPU>::operator=(matrix<CPU> &&other) noexcept
+{
+
+    if (this != &other) {
+        _mm_free(data);          
+
+        r = other.r;
+        c = other.c;
+        n = other.n;
+        shape = std::move(other.shape);
+
+        data = other.data;       
+        other.data = nullptr;    
+        other.n = 0;
+        other.r = other.c = 0;
+    }
+    return *this;
+
+}
+
 const float &matrix<CPU>::operator[](size_t index) const
 {
     return this->data[index];
@@ -170,13 +228,11 @@ matrix<CPU> matrix<CPU>::operator*(const float &a) const
 
 matrix<CPU> matrix<CPU>::operator*(const matrix<CPU> &a) const
 {
-    matrix<CPU> result(this->shape);
-    matrix<CPU>::mat_mul(*this, a, result) ;
+    matrix<CPU> result({this->rows(), a.columns()}); 
+    matrix<CPU>::mat_mul(*this, a, result);
+    
     return result;
 }
-
-
-
 
 
 void matrix<CPU>::mat_mul(const matrix &a, const matrix &b, matrix &result)
@@ -275,9 +331,12 @@ void matrix<CPU>::transpose()
 {
     matrix<CPU> result({this->columns(),this->rows()});
     transpose(*this, result);
-    free(data);
+    if(data)
+        free(data);
+
     *this = result;
 }
+
 
 void matrix<CPU>::print()
 {
@@ -306,9 +365,32 @@ void matrix<CPU>::set(float val)
         data[i] = val;
 }
 
+void matrix<CPU>::insert_row(size_t row_pos, float val)
+{
+    if(row_pos > r)
+        throw std::out_of_range("insert_row: row_pos out of range");
+
+    size_t new_n = (r + 1) * c;
+    float* new_data = (float*) _mm_malloc(new_n * sizeof(float), ALIGN);
+    if(!new_data)
+        throw std::bad_alloc();
+
+    for(size_t i = 0; i < row_pos; ++i)
+        std::copy(data + i * c, data + (i + 1) * c, new_data + i * c);
+
+    std::fill(new_data + row_pos * c, new_data + (row_pos + 1) * c, val);
+
+    for(size_t i = row_pos; i < r; ++i)
+        std::copy(data + i * c, data + (i + 1) * c, new_data + (i + 1) * c);
+
+    _mm_free(data);
 
 
-
+    data = new_data;
+    ++r;
+    n = r * c;
+    shape[0] = r;
+}
 
 bool matrix<CPU>::equal_shape(const matrix<CPU> &a, const matrix<CPU> &b)
 {

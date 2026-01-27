@@ -195,6 +195,32 @@ matrix<CPU> activation<CPU>::Softmax(const matrix<CPU> &a)
     return result;
 }
 
+activation_func activation<CPU>::derivative_of(const activation_func &f)
+{
+    if(f.target<decltype(&activation<CPU>::identity)>())
+        return activation<CPU>::didentity;
+
+    if(f.target<decltype(&activation<CPU>::ReLU)>())
+        return activation<CPU>::dReLU;
+
+    if(f.target<decltype(&activation<CPU>::ELU)>())
+        return activation<CPU>::dELU;
+
+    if(f.target<decltype(&activation<CPU>::Sigmoid)>())
+        return activation<CPU>::dSigmoid;
+
+    if(f.target<decltype(&activation<CPU>::Log_Sigmoid)>())
+        return activation<CPU>::dLog_Sigmoid;
+
+    if(f.target<decltype(&activation<CPU>::Hard_Sigmoid)>())
+        return activation<CPU>::dHard_Sigmoid;
+
+    if(f.target<decltype(&activation<CPU>::Tanh)>())
+        return activation<CPU>::dTanh;
+
+    throw std::runtime_error("No derivative registered for activation");
+}
+
 matrix<CPU> activation<CPU>::didentity(const matrix<CPU> &a)
 {
     matrix<CPU> result(a.get_shape(), 1);
@@ -355,6 +381,21 @@ float loss<CPU>::Quadratic(const matrix<CPU> &expected, const matrix<CPU> &proba
         sum += (probability[i] - expected[i]) * (probability[i] - expected[i]);
 
     return sum * 1/ expected.size();
+}
+
+loss_func_derivative loss<CPU>::derivative_of(const loss_func &f, const activation_func& afunc_output_layer)
+{
+    if(f.target<decltype(&loss<CPU>::Quadratic)>())
+        return loss<CPU>::dQuadratic;
+
+
+    if (afunc_output_layer.target<decltype(&activation<CPU>::Softmax)>() && f.target<decltype(&loss<CPU>::Cross_Entropy)>())
+        return loss<CPU>::dCross_Entropy_inkl_Softmax;
+
+    if(f.target<decltype(&loss<CPU>::Cross_Entropy)>())
+        return loss<CPU>::dCross_Entropy;
+    
+    throw std::runtime_error("No derivative registered for loss func");
 }
 
 matrix<CPU> loss<CPU>::dCross_Entropy(const matrix<CPU> &expected, const matrix<CPU> &probability)

@@ -25,10 +25,15 @@ public:
     
     matrix<CPU>();
     matrix<CPU>(const matrix<CPU>& other);
+    matrix<CPU>(matrix<CPU>&& other) noexcept;
     matrix<CPU>(const std::vector<size_t> &shape);
+    matrix<CPU>(const std::vector<size_t> &shape, std::vector<float>& values);
     matrix<CPU>(const std::vector<size_t> &shape, float val);
     matrix<CPU>(const std::vector<size_t> &shape, float start, float end);
     ~matrix<CPU>();
+
+    matrix<CPU>& operator=(const matrix<CPU>& other);
+    matrix<CPU>& operator=(matrix<CPU>&& other) noexcept;
 
     const float& operator[](size_t index) const;
     float& operator[](size_t index);
@@ -46,8 +51,11 @@ public:
     static void mat_mul(const matrix& a, const matrix &b, matrix& result);
     static void mat_mul_transposed(const matrix& a, const matrix &b, matrix& result);
 
+
     void transpose();
     static void transpose(const matrix &a, matrix &result);
+
+
 
     std::vector<size_t> get_shape() const;
     size_t rows() const;
@@ -56,6 +64,7 @@ public:
 
     void print();
     void set(float val);
+    void insert_row(size_t row_pos, float val );
 
     static bool equal_shape(const matrix<CPU> &a, const matrix<CPU>  &b);
     static void hadamard(const matrix<CPU>  &a,const matrix<CPU>  &b, matrix<CPU>  &result);

@@ -1,28 +1,32 @@
 #pragma once
 #include "model.h"
 #include "matrix.h"
+#include "activationCPU.h"
 #include <string>
 
-using activation_func = std::function<matrix<CPU>(matrix<CPU>&)>;
-using loss_func = std::function<matrix<CPU>(matrix<CPU>&)>;
+
 class model
 {
 protected:
+    
     size_t input_layer_neurons;
     size_t output_layer_neurons;
-    activation_func output_layer_afunc;
-    loss_func lfunc;
 
-    std::vector<size_t> hidden_layer_neurons;
-    std::vector<activation_func> hidden_layer_afuncs;
+    loss_func lfunc;
+    loss_func_derivative lfdx;
+
+    std::vector<size_t> neurons_per_layer;
+    std::vector<activation_func> afuncs;
+    std::vector<activation_func> afdx;
+
 
     model();
 
 public:
-    void configure_input_layer(const size_t neurons);
-    void add_hidden_layer(const size_t neurons, activation_func  afunc);
-    void configure_output_layer(const size_t neurons, activation_func afunc);
+
+    void add_layer(const size_t neurons, activation_func  afunc);
     void configure_loss_function(loss_func lfunc);
+
 
 };
 
@@ -30,10 +34,18 @@ template<>
 class classificator<CPU> : public model
 {   
 private:
-    std::vector<std::vector<float>> input;
-    std::vector<std::vector<float>> expected;
+
+    std::vector<matrix<CPU>> weight_matrices;
 
 public:
+
+    std::vector<matrix<CPU>> input;
+    std::vector<matrix<CPU>> expected;
+
     classificator<CPU>();
     void load_csv(const std::string& filename, size_t label_col = 0);
+
+    void initalise();
+    void fit(size_t epochs);
+    std::vector<matrix<CPU>> layer_outputs(const matrix<CPU>& input);
 };

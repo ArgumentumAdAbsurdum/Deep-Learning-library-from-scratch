@@ -761,8 +761,10 @@ CMakeFiles/deeplearninglibary.dir/src/CPU/matrixCPU.cpp.o: /home/lucbr/Documents
   /usr/lib/gcc/x86_64-linux-gnu/13/include/xtestintrin.h
 
 CMakeFiles/deeplearninglibary.dir/src/CPU/modelCPU.cpp.o: /home/lucbr/Documents/DeepLearningLibary/src/CPU/modelCPU.cpp \
+  /home/lucbr/Documents/DeepLearningLibary/headers/CPU/activationCPU.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/CPU/matrixCPU.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/CPU/modelCPU.h \
+  /home/lucbr/Documents/DeepLearningLibary/headers/activation.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/backend.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/matrix.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/model.h \
@@ -1143,8 +1145,10 @@ CMakeFiles/deeplearninglibary.dir/src/CPU/modelCPU.cpp.o: /home/lucbr/Documents/
   /usr/lib/gcc/x86_64-linux-gnu/13/include/xtestintrin.h
 
 CMakeFiles/deeplearninglibary.dir/src/main.cpp.o: /home/lucbr/Documents/DeepLearningLibary/src/main.cpp \
+  /home/lucbr/Documents/DeepLearningLibary/headers/CPU/activationCPU.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/CPU/matrixCPU.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/CPU/modelCPU.h \
+  /home/lucbr/Documents/DeepLearningLibary/headers/activation.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/backend.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/matrix.h \
   /home/lucbr/Documents/DeepLearningLibary/headers/model.h \
