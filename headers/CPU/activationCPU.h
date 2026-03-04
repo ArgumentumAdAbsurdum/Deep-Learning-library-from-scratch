@@ -102,3 +102,6 @@ public:
     double beta2;
     double epsilon;
 };
+
+inline adam_optimizer<CPU>::adam_optimizer() : lr(0.001), beta1(0.9), beta2(0.99), epsilon(1e-8)
+{}

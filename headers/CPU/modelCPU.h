@@ -61,6 +61,7 @@ private:
     matrix<CPU> run(const matrix<CPU>& input);
 
     
+    void epoch(dataset<CPU>& ds, size_t pos, double lr, size_t batch_size);
 
 public:
 
@@ -76,7 +77,7 @@ public:
     void initalise_he();
 
     void fit(const size_t epochs,dataset<CPU> &ds, optimizer_type ofunc, double lr = 0.1, size_t batch_size = 10000);
-    void fit(const size_t epochs,dataset<CPU> &ds, adam_optimizer<CPU> &adam);
+    void fit(const size_t epochs,dataset<CPU> &ds, optimizer_type ofunc, adam_optimizer<CPU> &adam);
 
     void performance(dataset<CPU>& ds, std::string name);
     void performance(dataset<CPU>& ds);

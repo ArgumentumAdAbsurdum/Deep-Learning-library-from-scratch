@@ -7,9 +7,8 @@
 int main()
 {
 
-    // TODO : model und classificator vereinen
-    // classificator umbennen 
-    // dataset fertig, error checking nach fit verschieben!
+    // TODO :
+    // step funktion für alle mit pos, batch_size, dataset, lr
     // Adam optimizer fit
     // fit fertig machen -> Batch GD, mini Batch GD
     // L2 weight opt
@@ -29,7 +28,7 @@ int main()
 
     
     Dataset train = Dataset("../datasets/mnist_train.csv");
-    Dataset test = Dataset("../datasets/mnist_train.csv");
+    Dataset test = Dataset("../datasets/mnist_test.csv");
  
     train.normalize();
     test.normalize();
@@ -37,9 +36,7 @@ int main()
     train.one_hot_encode();
     test.one_hot_encode();
     
-    c.fit(2, train, Optimizer::BATCH_GRADIENT_DESCENT, 0.001);
-
-    c.performance(train);
+    c.fit(60000, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.0001 , 100);
     c.performance(test);
 
 

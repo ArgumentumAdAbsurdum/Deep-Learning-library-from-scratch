@@ -40,12 +40,15 @@ void neuralnetwork<CPU>::initalise()
     for(int i = 0; i < neurons_per_layer.size()-1; i++)
     {
         size_t rows = neurons_per_layer[i+1];        
-        size_t cols = neurons_per_layer[i] + 1;      
+        size_t cols = neurons_per_layer[i];      
 
-        std::cout << "[LAYER = " << i << " WEIGHT MATRIX: => ROWS = " << rows << " , COLUMNS = " << cols << " ] " << std::endl;
+        std::cout << "[LAYER = " << i << " WEIGHT MATRIX: => ROWS = " << rows << " , COLUMNS = " << cols << ", BIAS = " <<  rows << "] " << std::endl;
 
         matrix<CPU> mat(rows, cols, -0.1, 0.1);    
         weight_matrices.push_back(mat);
+
+        matrix<CPU> bias(rows , 1, -0.1, 0.1);
+        bias_matrices.push_back(bias);
     }
 
 
@@ -73,13 +76,16 @@ matrix<CPU> neuralnetwork<CPU>::run(const matrix<CPU> &input)
     for(int i = 0; i < neurons_per_layer.size() - 1; i++)
     {
 
-        result.insert_row(0, 1);
-        matrix<CPU> prod = weight_matrices[i] * result;
+        matrix<CPU> prod = weight_matrices[i] * result + bias_matrices[i];
         
         result = afunc[i](prod);
     }
 
     return result;
+}
+
+void neuralnetwork<CPU>::epoch(dataset<CPU> &ds, size_t pos, double lr, size_t batch_size)
+{
 }
 
 std::vector<matrix<CPU>> neuralnetwork<CPU>::layer_outputs(const matrix<CPU> &input)
@@ -92,117 +98,186 @@ std::vector<matrix<CPU>> neuralnetwork<CPU>::layer_outputs(const matrix<CPU> &in
     
     for(int i = 0; i < neurons_per_layer.size() - 1; i++)
     {
-
-        current.insert_row(0, 1);
-        matrix<CPU> prod = weight_matrices[i] * current;
+        matrix<CPU> prod = weight_matrices[i] * current + bias_matrices[i];
         
         current = afunc[i](prod);
 
         outputs[i+1] = current;
     }
-
     return outputs;
 }
 
 
 void neuralnetwork<CPU>::mini_batch_gradient_descent(const size_t epochs, dataset<CPU>& ds, double lr , size_t batch_size)
 {
+    std::vector<matrix<CPU>> wgradients;
+    wgradients.resize(weight_matrices.size());
 
-}
+    std::vector<matrix<CPU>> bgradients;
+    bgradients.resize(bias_matrices.size());
 
-void neuralnetwork<CPU>::batch_gradient_descent(const size_t epochs, dataset<CPU>& ds,  double lr)
-{
-    
-    std::vector<matrix<CPU>> gradients;
-    gradients.resize(weight_matrices.size());
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, ds.input.size() / batch_size - 1); 
+
+
+    for(size_t i = 0; i < weight_matrices.size(); i++)
+    {
+        wgradients[i] = matrix<CPU>(weight_matrices[i].rows(), weight_matrices[i].columns(), 0);
+        bgradients[i] = matrix<CPU>(bias_matrices[i].rows(), 1, 0);
+    }
 
     for(size_t ep = 0; ep < epochs; ep++)
     {
+
+        // ----------------------------------
+
         for(size_t i = 0; i < weight_matrices.size(); i++)
-            gradients[i] = matrix<CPU>(weight_matrices[i].rows(), weight_matrices[i].columns(), 0);
+        {
+            wgradients[i].set(0);
+            bgradients[i].set(0);
+        }
 
+        size_t start = dist(rng);
         std::vector<matrix<CPU>> Z;
-        std::vector<matrix<CPU>> Zb;
-        
         Z.reserve(this->weight_matrices.size() + 1);
-        Zb.reserve(this->weight_matrices.size() + 1);
 
-        for(size_t pos = 0; pos < ds.input.size(); pos++)
+        for(size_t pos = start; pos < start + batch_size; pos++)
         {
             matrix<CPU> &input_value = ds.input[pos];
-            matrix<CPU> truth_value = ds.expected[pos];
-
+            matrix<CPU> &truth_value = ds.expected[pos];
             Z = layer_outputs(input_value);
-            Zb = Z;
-
-            for(matrix<CPU> &mat : Zb)
-                mat.insert_row(0,1);
 
 
             ssize_t index = Z.size() - 1;
-            matrix<CPU> delta = lfunc_dx(Z[index], truth_value) % afunc_dx[index-1](weight_matrices[index-1] * Zb[index-1]); 
+            matrix<CPU> delta = lfunc_dx(Z[index], truth_value) % afunc_dx[index-1](weight_matrices[index-1] * Z[index-1] + bias_matrices[index-1]); 
 
-            gradients[index-1] += delta * Zb[index-1].transpose();
-            
+            wgradients[index-1] += delta * Z[index-1].transpose();
+            bgradients[index-1] += delta;
             
             index-= 2;
             for(index; index >= 0; index--)  
             {    
                 matrix<CPU> weight_transposed = weight_matrices[index+1].transpose();
-                weight_transposed.remove_row(0);
         
-                delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Zb[index]);
+                delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Z[index] + bias_matrices[index]);
                 
-                gradients[index] += delta * Zb[index].transpose();
+                wgradients[index] += delta * Z[index].transpose();
+                bgradients[index] += delta;
             }
             
         }
 
         for(size_t i = 0; i < weight_matrices.size(); i++)
-            weight_matrices[i] -= gradients[i] * (lr / ((float) ds.input.size())); 
+        {
+            weight_matrices[i] -= wgradients[i] * (lr / ((float) batch_size)); 
+            bias_matrices[i] -= bgradients[i] * (lr / ((float) batch_size));
+        }
 
     }
 }
 
+void neuralnetwork<CPU>::batch_gradient_descent(const size_t epochs, dataset<CPU>& ds,  double lr)
+{
+
+    std::vector<matrix<CPU>> wgradients;
+    wgradients.resize(weight_matrices.size());
+
+    std::vector<matrix<CPU>> bgradients;
+    bgradients.resize(bias_matrices.size());
+
+    for(size_t ep = 0; ep < epochs; ep++)
+    {
+        for(size_t i = 0; i < weight_matrices.size(); i++)
+        {
+            wgradients[i] = matrix<CPU>(weight_matrices[i].rows(), weight_matrices[i].columns(), 0);
+            bgradients[i] = matrix<CPU>(bias_matrices[i].rows(), 1, 0);
+        }
+
+        std::vector<matrix<CPU>> Z;
+        Z.reserve(this->weight_matrices.size() + 1);
+
+        for(size_t pos = 0; pos < ds.input.size(); pos++)
+        {
+            matrix<CPU> &input_value = ds.input[pos];
+            matrix<CPU> truth_value = ds.expected[pos];
+            Z = layer_outputs(input_value);
+
+
+            ssize_t index = Z.size() - 1;
+            matrix<CPU> delta = lfunc_dx(Z[index], truth_value) % afunc_dx[index-1](weight_matrices[index-1] * Z[index-1] + bias_matrices[index-1]); 
+
+            wgradients[index-1] += delta * Z[index-1].transpose();
+            bgradients[index-1] += delta;
+            
+            index-= 2;
+            for(index; index >= 0; index--)  
+            {    
+                matrix<CPU> weight_transposed = weight_matrices[index+1].transpose();
+        
+                delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Z[index] + bias_matrices[index]);
+                
+                wgradients[index] += delta * Z[index].transpose();
+                bgradients[index] += delta;
+            }
+            
+        }
+
+        for(size_t i = 0; i < weight_matrices.size(); i++)
+        {
+            weight_matrices[i] -= wgradients[i] * (lr / ((float) ds.input.size())); 
+            bias_matrices[i] -= bgradients[i] * (lr / ((float) ds.input.size()));
+        }
+
+    }
+}
+
+
+
 void neuralnetwork<CPU>::stochastic_gradient_descent(const size_t epochs, dataset<CPU>& ds, double lr)
 {
+
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> dist(0,ds.input.size()-1); 
 
     for(size_t ep = 0; ep < epochs; ep++)
-    {
+    {   
+
         size_t pos = dist(rng);
         matrix<CPU> &input_value = ds.input[pos];
         matrix<CPU> truth_value = ds.expected[pos];
 
         std::vector<matrix<CPU>> Z = layer_outputs(input_value);
-        std::vector<matrix<CPU>> Zb = Z;
-        for(matrix<CPU> &mat : Zb)
-            mat.insert_row(0,1);
 
-
-        size_t index = Z.size() - 1;
-        matrix<CPU> delta = lfunc_dx(Z[index], truth_value) % afunc_dx[index-1](weight_matrices[index-1] * Zb[index-1]); 
-
-        matrix<CPU> gradient = delta * Zb[index-1].transpose();
-
-        weight_matrices[index-1] = weight_matrices[index-1] - lr * gradient;
-
-    
-        for(int i = index - 2; i >= 0; i--)  
-        {    
-            matrix<CPU> weight_transposed = weight_matrices[i+1].transpose();
-            weight_transposed.remove_row(0);
         
-            delta = (weight_transposed * delta) % afunc_dx[i](weight_matrices[i] * Zb[i]);
-            gradient = delta * Zb[i].transpose();
-            weight_matrices[i] = weight_matrices[i] - lr* gradient;
+        ssize_t index = Z.size() - 1;
+        matrix<CPU> delta = lfunc_dx(Z[index], truth_value) % afunc_dx[index-1](weight_matrices[index-1] * Z[index-1] + bias_matrices[index-1]); 
+
+        
+        matrix<CPU> wgradient = delta * Z[index-1].transpose();
+        matrix<CPU>& bgradient = delta;
+        
+
+        weight_matrices[index-1] -= lr * wgradient;
+        bias_matrices[index-1] -= lr * bgradient;
+        
+        
+
+        index -=2;
+        for(index; index >= 0; index--)  
+        {    
+            matrix<CPU> weight_transposed = weight_matrices[index+1].transpose();
+        
+            delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Z[index]);
+            wgradient = delta * Z[index].transpose();
+            bgradient = delta;
+
+            weight_matrices[index] -= lr * wgradient;
+            bias_matrices[index] -= lr * bgradient;
         }
 
     }
-
-
 }
 
 
@@ -222,22 +297,31 @@ void neuralnetwork<CPU>::fit(const size_t epochs, dataset<CPU>& ds, optimizer_ty
     {
         case optimizer<CPU>::STOCHASTIC_GRADIENT_DESCENT:
             stochastic_gradient_descent(epochs, ds, lr);
+            break;
 
         case optimizer<CPU>::BATCH_GRADIENT_DESCENT:
             batch_gradient_descent(epochs, ds, lr);
+            break;
 
         case optimizer<CPU>::MIN_BATCH_GRADIENT_DESCENT:
             mini_batch_gradient_descent(epochs, ds, lr, batch_size);
+            break;
     }
 }
 
+void neuralnetwork<CPU>::fit(const size_t epochs, dataset<CPU> &ds, optimizer_type ofunc, adam_optimizer<CPU> &adam)
+{
 
+}
 
 void neuralnetwork<CPU>::performance(dataset<CPU> &ds, std::string name)
 {
 
     double rmsqe = 0;
     double accuracy = 0;
+
+    
+    #pragma omp parallel for reduction(+ : rmsqe, accuracy) num_threads(4)
     for(size_t i = 0; i < ds.input.size(); i++)
     {
         matrix<CPU> pred = run(ds.input[i]);
