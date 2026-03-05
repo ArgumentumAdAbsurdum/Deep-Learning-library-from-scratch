@@ -53,15 +53,12 @@ private:
     std::vector<matrix<CPU>> bias_matrices;
 
 
-    void mini_batch_gradient_descent(const size_t epochs, dataset<CPU> &ds, double lr, size_t batch_size);
-    void batch_gradient_descent(const size_t epochs, dataset<CPU> &ds, double lr);
-    void stochastic_gradient_descent(const size_t epochs, dataset<CPU> &ds, double lr);
+    void gradient_descent(const size_t epochs, dataset<CPU> &ds, double lr, size_t batch_size);
     
     std::vector<matrix<CPU>> layer_outputs(const matrix<CPU>& input);
     matrix<CPU> run(const matrix<CPU>& input);
 
     
-    void epoch(dataset<CPU>& ds, size_t pos, double lr, size_t batch_size);
 
 public:
 
@@ -76,8 +73,8 @@ public:
     void initalise_xavier();
     void initalise_he();
 
-    void fit(const size_t epochs,dataset<CPU> &ds, optimizer_type ofunc, double lr = 0.1, size_t batch_size = 10000);
-    void fit(const size_t epochs,dataset<CPU> &ds, optimizer_type ofunc, adam_optimizer<CPU> &adam);
+    void fit(const size_t epochs,dataset<CPU> &ds, optimizer_type ofunc, double lr = 0.1, size_t batch_size = 32);
+    void fit(const size_t epochs,dataset<CPU> &ds, optimizer_type ofunc, adam_optimizer<CPU> &adam, size_t batch_size = 32);
 
     void performance(dataset<CPU>& ds, std::string name);
     void performance(dataset<CPU>& ds);

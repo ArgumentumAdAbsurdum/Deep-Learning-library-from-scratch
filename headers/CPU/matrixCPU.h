@@ -70,7 +70,11 @@ public:
     static void hadamard(const matrix<CPU>  &a,const matrix<CPU>  &b, matrix<CPU>  &result);
     static void add(const matrix<CPU>  &a, const matrix<CPU>  &b, matrix<CPU>  &result);
     static void sub(const matrix<CPU>  &a, const matrix<CPU>  &b, matrix<CPU>  &result);
-    static void scale(const matrix<CPU>  &a, const float value, matrix<CPU>  &result);    
+    static void scale(const matrix<CPU>  &a, const float value, matrix<CPU>  &result);
+    
+    static matrix<CPU> sqrt(const matrix<CPU> &a);
+    static matrix<CPU> square(const matrix<CPU> &a);
+    static matrix<CPU> reciprocal(const matrix<CPU> &a);
 };
 
 matrix<CPU> operator*(float val, const matrix<CPU>& a);

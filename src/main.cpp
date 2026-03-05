@@ -19,8 +19,8 @@ int main()
     NeuralNetwork c;
 
     c.configure_input_layer(784);
+    c.add_layer(256, Activation::RELU);
     c.add_layer(128, Activation::RELU);
-    c.add_layer(64, Activation::RELU);
     c.add_layer(10, Activation::SOFTMAX);
     c.configure_loss_function(Loss::CROSS_ENTROPY);
     
@@ -36,7 +36,14 @@ int main()
     train.one_hot_encode();
     test.one_hot_encode();
     
-    c.fit(60000, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.0001 , 100);
+    //c.fit(30000, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.001 , 2);
+
+    ADAM_Optimizer adam;
+    adam.lr = 0.0001;
+    c.fit(60000 * 15, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, adam, 4);
+
+
+    c.performance(train);
     c.performance(test);
 
 

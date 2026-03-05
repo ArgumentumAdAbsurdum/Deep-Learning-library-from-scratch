@@ -86,7 +86,6 @@ public:
     static optimizer_type STOCHASTIC_GRADIENT_DESCENT = 0;
     static optimizer_type BATCH_GRADIENT_DESCENT = 1;
     static optimizer_type MIN_BATCH_GRADIENT_DESCENT = 2;
-    static optimizer_type ADAM = 3;
 };
 
 
@@ -103,5 +102,5 @@ public:
     double epsilon;
 };
 
-inline adam_optimizer<CPU>::adam_optimizer() : lr(0.001), beta1(0.9), beta2(0.99), epsilon(1e-8)
+inline adam_optimizer<CPU>::adam_optimizer() : lr(0.001), beta1(0.9), beta2(0.999), epsilon(1e-8)
 {}

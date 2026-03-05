@@ -394,6 +394,36 @@ void matrix<CPU>::scale(const matrix<CPU> &a, const float value, matrix<CPU> &re
 
 }
 
+matrix<CPU> matrix<CPU>::sqrt(const matrix<CPU> &a)
+{
+    matrix<CPU> res = a;
+    for(size_t i = 0; i < a.size(); i++)
+    {
+        res[i] = std::sqrt(a[i]);
+    }
+    return res;
+}
+
+matrix<CPU> matrix<CPU>::square(const matrix<CPU> &a)
+{
+    matrix<CPU> res = a;
+    for(size_t i = 0; i < a.size(); i++)
+    {
+        res[i] = a[i] * a[i];
+    }
+    return res;
+}
+
+matrix<CPU> matrix<CPU>::reciprocal(const matrix<CPU> &a)
+{
+    matrix<CPU> res = a;
+    for(size_t i = 0; i < a.size(); i++)
+    {
+        res[i] = 1 /  a[i];
+    }
+    return res;
+}
+
 matrix<CPU> operator*(float val, const matrix<CPU> &a)
 {
     return a * val;
