@@ -117,24 +117,24 @@ depend:
 .PHONY : depend
 
 #=============================================================================
-# Target rules for targets named deeplearninglibary
+# Target rules for targets named DEEPLEARNINGLIBARY
 
 # Build rule for target.
-deeplearninglibary: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 deeplearninglibary
-.PHONY : deeplearninglibary
+DEEPLEARNINGLIBARY: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 DEEPLEARNINGLIBARY
+.PHONY : DEEPLEARNINGLIBARY
 
 # fast build rule for target.
-deeplearninglibary/fast:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/build
-.PHONY : deeplearninglibary/fast
+DEEPLEARNINGLIBARY/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/build
+.PHONY : DEEPLEARNINGLIBARY/fast
 
 src/CPU/activationCPU.o: src/CPU/activationCPU.cpp.o
 .PHONY : src/CPU/activationCPU.o
 
 # target to build an object file
 src/CPU/activationCPU.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/activationCPU.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/activationCPU.cpp.o
 .PHONY : src/CPU/activationCPU.cpp.o
 
 src/CPU/activationCPU.i: src/CPU/activationCPU.cpp.i
@@ -142,7 +142,7 @@ src/CPU/activationCPU.i: src/CPU/activationCPU.cpp.i
 
 # target to preprocess a source file
 src/CPU/activationCPU.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/activationCPU.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/activationCPU.cpp.i
 .PHONY : src/CPU/activationCPU.cpp.i
 
 src/CPU/activationCPU.s: src/CPU/activationCPU.cpp.s
@@ -150,7 +150,7 @@ src/CPU/activationCPU.s: src/CPU/activationCPU.cpp.s
 
 # target to generate assembly for a file
 src/CPU/activationCPU.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/activationCPU.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/activationCPU.cpp.s
 .PHONY : src/CPU/activationCPU.cpp.s
 
 src/CPU/datasetCPU.o: src/CPU/datasetCPU.cpp.o
@@ -158,7 +158,7 @@ src/CPU/datasetCPU.o: src/CPU/datasetCPU.cpp.o
 
 # target to build an object file
 src/CPU/datasetCPU.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/datasetCPU.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/datasetCPU.cpp.o
 .PHONY : src/CPU/datasetCPU.cpp.o
 
 src/CPU/datasetCPU.i: src/CPU/datasetCPU.cpp.i
@@ -166,7 +166,7 @@ src/CPU/datasetCPU.i: src/CPU/datasetCPU.cpp.i
 
 # target to preprocess a source file
 src/CPU/datasetCPU.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/datasetCPU.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/datasetCPU.cpp.i
 .PHONY : src/CPU/datasetCPU.cpp.i
 
 src/CPU/datasetCPU.s: src/CPU/datasetCPU.cpp.s
@@ -174,7 +174,7 @@ src/CPU/datasetCPU.s: src/CPU/datasetCPU.cpp.s
 
 # target to generate assembly for a file
 src/CPU/datasetCPU.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/datasetCPU.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/datasetCPU.cpp.s
 .PHONY : src/CPU/datasetCPU.cpp.s
 
 src/CPU/matrixCPU.o: src/CPU/matrixCPU.cpp.o
@@ -182,7 +182,7 @@ src/CPU/matrixCPU.o: src/CPU/matrixCPU.cpp.o
 
 # target to build an object file
 src/CPU/matrixCPU.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/matrixCPU.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/matrixCPU.cpp.o
 .PHONY : src/CPU/matrixCPU.cpp.o
 
 src/CPU/matrixCPU.i: src/CPU/matrixCPU.cpp.i
@@ -190,7 +190,7 @@ src/CPU/matrixCPU.i: src/CPU/matrixCPU.cpp.i
 
 # target to preprocess a source file
 src/CPU/matrixCPU.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/matrixCPU.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/matrixCPU.cpp.i
 .PHONY : src/CPU/matrixCPU.cpp.i
 
 src/CPU/matrixCPU.s: src/CPU/matrixCPU.cpp.s
@@ -198,7 +198,7 @@ src/CPU/matrixCPU.s: src/CPU/matrixCPU.cpp.s
 
 # target to generate assembly for a file
 src/CPU/matrixCPU.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/matrixCPU.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/matrixCPU.cpp.s
 .PHONY : src/CPU/matrixCPU.cpp.s
 
 src/CPU/neuralnetworkCPU.o: src/CPU/neuralnetworkCPU.cpp.o
@@ -206,7 +206,7 @@ src/CPU/neuralnetworkCPU.o: src/CPU/neuralnetworkCPU.cpp.o
 
 # target to build an object file
 src/CPU/neuralnetworkCPU.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/neuralnetworkCPU.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/neuralnetworkCPU.cpp.o
 .PHONY : src/CPU/neuralnetworkCPU.cpp.o
 
 src/CPU/neuralnetworkCPU.i: src/CPU/neuralnetworkCPU.cpp.i
@@ -214,7 +214,7 @@ src/CPU/neuralnetworkCPU.i: src/CPU/neuralnetworkCPU.cpp.i
 
 # target to preprocess a source file
 src/CPU/neuralnetworkCPU.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/neuralnetworkCPU.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/neuralnetworkCPU.cpp.i
 .PHONY : src/CPU/neuralnetworkCPU.cpp.i
 
 src/CPU/neuralnetworkCPU.s: src/CPU/neuralnetworkCPU.cpp.s
@@ -222,7 +222,7 @@ src/CPU/neuralnetworkCPU.s: src/CPU/neuralnetworkCPU.cpp.s
 
 # target to generate assembly for a file
 src/CPU/neuralnetworkCPU.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/CPU/neuralnetworkCPU.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/CPU/neuralnetworkCPU.cpp.s
 .PHONY : src/CPU/neuralnetworkCPU.cpp.s
 
 src/main.o: src/main.cpp.o
@@ -230,7 +230,7 @@ src/main.o: src/main.cpp.o
 
 # target to build an object file
 src/main.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/main.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/main.cpp.o
 .PHONY : src/main.cpp.o
 
 src/main.i: src/main.cpp.i
@@ -238,7 +238,7 @@ src/main.i: src/main.cpp.i
 
 # target to preprocess a source file
 src/main.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/main.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/main.cpp.i
 .PHONY : src/main.cpp.i
 
 src/main.s: src/main.cpp.s
@@ -246,7 +246,7 @@ src/main.s: src/main.cpp.s
 
 # target to generate assembly for a file
 src/main.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/deeplearninglibary.dir/build.make CMakeFiles/deeplearninglibary.dir/src/main.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/DEEPLEARNINGLIBARY.dir/build.make CMakeFiles/DEEPLEARNINGLIBARY.dir/src/main.cpp.s
 .PHONY : src/main.cpp.s
 
 # Help Target
@@ -257,7 +257,7 @@ help:
 	@echo "... depend"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
-	@echo "... deeplearninglibary"
+	@echo "... DEEPLEARNINGLIBARY"
 	@echo "... src/CPU/activationCPU.o"
 	@echo "... src/CPU/activationCPU.i"
 	@echo "... src/CPU/activationCPU.s"

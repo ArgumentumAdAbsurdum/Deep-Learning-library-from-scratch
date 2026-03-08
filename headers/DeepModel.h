@@ -15,8 +15,7 @@ class neuralnetwork;
 
 
 #ifdef ENABLE_CUDA
-    #include "modelCUDA.cu"
-    using Classificator = classificator<CUDA>;
+    #include "modelGPU.cuh"
 
 #else
     #include "modelCPU.h"

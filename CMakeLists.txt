@@ -1,30 +1,53 @@
 cmake_minimum_required(VERSION 3.16) 
 project(DEEPLEARNINGLIBARY LANGUAGES CXX) 
-# C++ Standard 
+set(CMAKE_CUDA_ARCHITECTURES native)
+
 set(CMAKE_CXX_STANDARD 17) 
 set(CMAKE_CXX_STANDARD_REQUIRED ON) 
 set(CMAKE_CXX_EXTENSIONS OFF) 
 
-#
+
+option(ENABLE_CUDA "CUDA Support" OFF)
+
 include_directories(headers)
-include_directories(headers/CPU)
-include_directories(headers/CUDA)
 
-add_executable( deeplearninglibary 
-    src/main.cpp 
-    src/CPU/matrixCPU.cpp 
-    src/CPU/activationCPU.cpp
-    src/CPU/neuralnetworkCPU.cpp
-    src/CPU/datasetCPU.cpp
-    ) 
 
-find_package(OpenMP)
-if(OpenMP_CXX_FOUND)
-    target_link_libraries(deeplearninglibary PRIVATE OpenMP::OpenMP_CXX)
+if(ENABLE_CUDA)
+    enable_language(CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    include_directories(headers/GPU)
+    add_compile_definitions(ENABLE_CUDA)
+
+    set(SOURCES 
+        src/main.cpp
+        src/GPU/matrixGPU.cu
+        src/GPU/activationGPU.cu
+        src/GPU/neuralnetworkGPU.cu
+        src/GPU/datasetGPU.cu
+    )
+else()
+    include_directories(headers/CPU)
+    set(SOURCES 
+        src/main.cpp 
+        src/CPU/matrixCPU.cpp 
+        src/CPU/activationCPU.cpp
+        src/CPU/neuralnetworkCPU.cpp
+        src/CPU/datasetCPU.cpp
+    )
 endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(deeplearninglibary PRIVATE
+
+add_executable(DEEPLEARNINGLIBARY ${SOURCES})
+
+if (NOT ENABLE_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+
+    find_package(OpenMP)
+    if(OpenMP_CXX_FOUND)
+        target_link_libraries(DEEPLEARNINGLIBARY PRIVATE OpenMP::OpenMP_CXX)
+    endif()
+
+    target_compile_options(DEEPLEARNINGLIBARY PRIVATE
         -Ofast              
         -march=native
         -mtune=native
@@ -35,4 +58,14 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         -fno-trapping-math
         -fassociative-math
     )
+endif()
+
+
+if(CUDA_ENABLED)
+
+    find_package(CUDAToolkit REQUIRED)
+    target_link_libraries(DEEPLEARNINGLIBARY PRIVATE 
+        CUDA::cudart
+    )
+
 endif()
