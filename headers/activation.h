@@ -18,9 +18,12 @@ class hyperparameter;
 
 
 #ifdef ENABLE_CUDA
-    #include "activiationCUDA.cu"
+    #include "activationCUDA.cuh"
     using Activation = activation<CUDA>;
     using Loss = loss<CUDA>;
+    using Optimizer = optimizer<CUDA>;
+    using ADAM_Optimizer = adam_optimizer<CUDA>;
+    using Hyperparameter = hyperparameter<CUDA>;
 #else
     #include "activationCPU.h"
     using Activation = activation<CPU>;

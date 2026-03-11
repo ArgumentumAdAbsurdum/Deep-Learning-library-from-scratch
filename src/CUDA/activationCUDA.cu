@@ -18,57 +18,84 @@ matrix<CUDA> activation<CUDA>::identity(const matrix<CUDA> &a)
 
 matrix<CUDA> activation<CUDA>::relu(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result(a.rows(), a.columns());
-    
+    matrix<CUDA> result = matrix<CUDA>::create_stacked_matrix(a.rows(), a.columns(), a.height());
 
-       
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_relu<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
+
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::elu(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result(a.rows(), a.columns());
+    matrix<CUDA> result = matrix<CUDA>::create_stacked_matrix(a.rows(), a.columns(), a.height());
+    
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_elu<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), ELU_ALPHA_PARAM, result.size());
     
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::sigmoid(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result(a.rows(), a.columns());
+    matrix<CUDA> result = matrix<CUDA>::create_stacked_matrix(a.rows(), a.columns(), a.height());
     
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_sigmoid<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
     
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::log_sigmoid(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result(a.rows(), a.columns());
-    
+    matrix<CUDA> result = matrix<CUDA>::create_stacked_matrix(a.rows(), a.columns(), a.height());
 
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_log_sigmoid<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
     
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::hard_sigmoid(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result(a.rows(), a.columns());
+    matrix<CUDA> result = matrix<CUDA>::create_stacked_matrix(a.rows(), a.columns(), a.height());
+   
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_hard_sigmoid<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
     
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::tanh(const matrix<CUDA> &a)
-{
+{    
     matrix<CUDA> result(a.rows(), a.columns());
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
 
+    activation_function_kernel_tanh<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
+    
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::softmax(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result = a;
+    matrix<CUDA> ones_bcast = matrix<CUDA>::create_stacked_matrix(a.rows(), a.columns(), a.height(), 1);
 
+    matrix<CUDA> max_rows = a.max_device(); 
 
-    return result;
+    matrix<CUDA> max_expanded = matrix<CUDA>::bcast_scale_to_stacked_matrix(ones_bcast, max_rows);
+
+    matrix<CUDA> exp = matrix<CUDA>::exp(a - max_expanded);
+
+    matrix<CUDA> exp_sum = exp.sum_device();
+
+    matrix<CUDA> exp_sum_expanded = matrix<CUDA>::bcast_scale_to_stacked_matrix(ones_bcast, exp_sum);
+
+    return exp % matrix<CUDA>::reciprocal(exp_sum_expanded);
 }
 
 matrix<CUDA> activation<CUDA>::didentity(const matrix<CUDA> &a)
@@ -80,12 +107,19 @@ matrix<CUDA> activation<CUDA>::didentity(const matrix<CUDA> &a)
 matrix<CUDA> activation<CUDA>::drelu(const matrix<CUDA> &a)
 {
     matrix<CUDA> result(a.rows(), a.columns());
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_drelu<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
+    
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::delu(const matrix<CUDA> &a)
 {
     matrix<CUDA> result(a.rows(), a.columns());
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_delu<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), ELU_ALPHA_PARAM, result.size());
     
     return result;
 }
@@ -104,14 +138,21 @@ matrix<CUDA> activation<CUDA>::dlog_sigmoid(const matrix<CUDA> &a)
 
 matrix<CUDA> activation<CUDA>::dhard_sigmoid(const matrix<CUDA> &a)
 {
-
     matrix<CUDA> result(a.rows(), a.columns());
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_dhard_sigmoid<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
+    
     return result;
 }
 
 matrix<CUDA> activation<CUDA>::dtanh(const matrix<CUDA> &a)
 {
     matrix<CUDA> result(a.rows(), a.columns());
+    size_t blocks = (result.size() + matrix<CUDA>::THREADS_1D - 1) / matrix<CUDA>::THREADS_1D;
+
+    activation_function_kernel_dtanh<<<blocks, matrix<CUDA>::THREADS_1D>>>(a.raw(), result.raw(), result.size());
+    
     return result;
 }
 
@@ -186,18 +227,20 @@ activation_fn activation<CUDA>::get_derivative_fn(activation_type atype)
 
 matrix<CUDA> loss<CUDA>::cross_entropy(const matrix<CUDA> &probability, const matrix<CUDA> &expected)
 {
-    float sum = 0;
-    float epsilon = 1e-15f; 
+    matrix<CUDA> prod = matrix<CUDA>::log2(probability) % expected;
+    matrix<CUDA> weighted_prod = matrix<CUDA>::bcast_reversed_mat_mul_to_stacked_matrix(prod, this->weights);
 
-    return matrix<CUDA>();
+    return weighted_prod.sum_device() * (-1);
 }
 
 matrix<CUDA> loss<CUDA>::quadratic(const matrix<CUDA> &probability, const matrix<CUDA> &expected)
 {
-    float sum = 0;
-    matrix<CUDA> err_sq = matrix<CUDA>::square(probability - expected);
+    matrix<CUDA> sq_err = matrix<CUDA>::square(probability - expected);
 
-    return  matrix<CUDA>(); //(err_sq % this->weights).sum() / expected.size();
+    matrix<CUDA> weighted_sq_err = matrix<CUDA>::bcast_reversed_mat_mul_to_stacked_matrix(sq_err, this->weights);
+    
+
+    return  weighted_sq_err * (1 / (float)expected.mat_size());
 }
 
 
@@ -205,34 +248,28 @@ matrix<CUDA> loss<CUDA>::dcross_entropy(const matrix<CUDA> &probability, const m
 {
     matrix<CUDA> grad(probability.rows(), probability.columns(), 0);
 
+    matrix<CUDA> prod = expected % matrix<CUDA>::reciprocal(probability) * (-1);
+    matrix<CUDA> weighted_prod = matrix<CUDA>::bcast_scale_to_stacked_matrix(prod, this->weights);
 
-
-    return grad;
+    return weighted_prod;
 }
 
 matrix<CUDA> loss<CUDA>::dcross_entropy_inkl_softmax(const matrix<CUDA> &probability, const matrix<CUDA> &expected)
 {
-    /*
-    matrix<CPU> grad(probability.rows(), probability.columns(), 0);
-    for (int i = 0; i < expected.size(); i++)
-        grad[i] = probability[i] - expected[i];
-    */
-    
-    
-    matrix<CUDA> grad = (probability - expected) % this->weights;
-    return grad;
+    matrix<CUDA> err = probability - expected;
+
+    matrix<CUDA> weighted_err = matrix<CUDA>::bcast_scale_to_stacked_matrix(err, this->weights);
+
+    return weighted_err;
 }
 
 matrix<CUDA> loss<CUDA>::dquadratic(const matrix<CUDA> &probability, const matrix<CUDA> &expected)
 {
-    /*
-    matrix<CPU> grad(probability.rows(), probability.columns(), 0);
+    matrix<CUDA> err = probability - expected;
 
-    for (int i = 0; i < expected.size(); i++)
-        grad[i] = 2 * (probability[i] - expected[i]);
-    */
-    matrix<CUDA> grad = 2 * ((probability - expected) % this->weights); 
-    return grad;
+    matrix<CUDA> weighted_err = matrix<CUDA>::bcast_scale_to_stacked_matrix(err, this->weights);
+
+    return  weighted_err * 2;
 }
 
 

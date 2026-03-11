@@ -57,8 +57,11 @@ public:
     size_t height() const;
     size_t size() const;
     bool empty() const;
+
     std::vector<float>& raw();
-    std::vector<float> raw_copy();
+    std::vector<float> raw_copy();  // das dann weg.
+    std::vector<float> values();
+
 
     double sum();
     double L1();

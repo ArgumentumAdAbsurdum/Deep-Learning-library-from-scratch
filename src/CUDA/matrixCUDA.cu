@@ -6,7 +6,7 @@
 #include "kernel.cuh"
 
 
-matrix<CUDA>::matrix() : n(0), h(0), c(0), r(0)
+matrix<CUDA>::matrix() : n(0), h(0), c(0), r(0), data(nullptr)
 {
 }
 
@@ -141,13 +141,13 @@ matrix<CUDA> matrix<CUDA>::create_stacked_matrix(matrix<CUDA>* begin, matrix<CUD
 // ------------------------------------------
 
 
-matrix<CUDA> matrix<CUDA>::add_mat_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b)
+matrix<CUDA> matrix<CUDA>::bcast_add_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b)
 {   
 
     size_t mat_size = a.mat_size();
 
     if(mat_size != b.mat_size() || b.height() != 1)
-        throw std::runtime_error("add_mat_to_stacked_matrix : matrix dimensions must be equal and the height of the second matrix needs to be 1.");    
+        throw std::runtime_error("bcast_add_to_stacked_matrix : matrix dimensions must be equal and the height of the second matrix needs to be 1.");    
     
     dim3 threads(256);
     dim3 blocks(
@@ -156,7 +156,28 @@ matrix<CUDA> matrix<CUDA>::add_mat_to_stacked_matrix(const matrix<CUDA>& a, cons
     );
 
     matrix<CUDA> result = a;
-    matrix_kernel_add_mat_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, mat_size, a.size());
+    matrix_kernel_bcast_add_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, mat_size, a.size());
+    return result;
+}
+
+matrix<CUDA> matrix<CUDA>::bcast_reversed_mat_mul_to_stacked_matrix(const matrix<CUDA> &a, const matrix<CUDA> &b)
+{
+
+    
+    if(b.columns() != a.rows() || b.height() != 1)
+        throw std::runtime_error("bcast_reversed_mat_mul_to_stacked_matrix : matrix shapes do not match. b.columns() needs to be equal to a.rows() (reversed mat mul!) ");
+
+    matrix<CUDA> result = create_stacked_matrix(b.rows(), a.columns(), a.height());
+
+    dim3 threads(16, 16);
+    dim3 blocks(
+        (result.rows() + 15) / 16,
+        (result.columns() + 15) / 16,
+        result.height()
+    );
+
+    matrix_kernel_bcast_reversed_mat_mul_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, result.r, result.c, b.columns());
+
     return result;
 }
 
@@ -165,6 +186,23 @@ matrix<CUDA> matrix<CUDA>::add_mat_to_stacked_matrix(const matrix<CUDA>& a, cons
 
 
 
+
+matrix<CUDA> matrix<CUDA>::bcast_scale_to_stacked_matrix(const matrix<CUDA> &a, const matrix<CUDA> &b)
+{
+    size_t mat_size = a.mat_size();
+    if(b.rows() != 1 || b.columns() != 1 )
+        throw std::runtime_error("bcast_scale_to_stacked_matrix : Height of matrices need to match and second matrix has to be of shape 1x1xh");    
+    
+    dim3 threads(256);
+    dim3 blocks(
+        (mat_size + 255) / 256,             // round div by 256 up
+        a.h
+    );
+
+    matrix<CUDA> result = a;
+    matrix_kernel_bcast_scale_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, mat_size, a.size());
+    return result;
+}
 
 size_t matrix<CUDA>::rows() const
 {
@@ -202,8 +240,19 @@ float* matrix<CUDA>::raw()
     return data;
 }
 
+float *matrix<CUDA>::raw() const
+{
+    return data;
+}
 
-std::vector<float> matrix<CUDA>::sum()
+std::vector<float> matrix<CUDA>::values()
+{
+    std::vector<float> result(this->n);
+    cudaMemcpy(result.data(), this->data, this->n *sizeof(float), cudaMemcpyDeviceToHost);
+    return result;
+}
+
+matrix<CUDA> matrix<CUDA>::sum_device() const
 {
     size_t mat_size = this->r * this->c;
     size_t amount_blocks = (mat_size + THREADS_1D - 1 ) / THREADS_1D;
@@ -212,26 +261,25 @@ std::vector<float> matrix<CUDA>::sum()
     float* block_sums;
     cudaMalloc(&block_sums, this->h * amount_blocks * sizeof(float));
 
+
     dim3 blocks(amount_blocks, this->h);
     matrix_kernel_sum<<<blocks, THREADS_1D, shared>>>(this->data, block_sums, mat_size);
 
-    
+    matrix<CUDA> result = create_stacked_matrix(1,1, this->h);
     if(amount_blocks > 1)
     {
         dim3 blocks2(1, this->h);
-        matrix_kernel_sum<<<blocks2, THREADS_1D, shared>>>(block_sums, block_sums, amount_blocks);
+        matrix_kernel_sum<<<blocks2, THREADS_1D, shared>>>(block_sums, result.data, amount_blocks);
     }
-    
-    std::vector<float> result(this->h);
-    cudaMemcpy(result.data(), block_sums, this->h * sizeof(size_t), cudaMemcpyDeviceToHost);
+    else 
+        cudaMemcpy(result.data, block_sums, this->h * sizeof(float), cudaMemcpyDeviceToDevice);
+
     cudaFree(block_sums);
-
     return result;
-} 
+}
 
-std::vector<float> matrix<CUDA>::L2()
+matrix<CUDA> matrix<CUDA>::L2_device() const
 {
-    
     matrix<CUDA> squared = matrix<CUDA>::square(*this);
     
     size_t mat_size = this->r * this->c;
@@ -244,21 +292,93 @@ std::vector<float> matrix<CUDA>::L2()
     dim3 blocks(amount_blocks, this->h);
     matrix_kernel_sum<<<blocks, THREADS_1D, shared>>>(squared.data, block_sums, mat_size);
 
-    
+    matrix<CUDA> result = create_stacked_matrix(1,1,this->h);
     if(amount_blocks > 1)
     {
         dim3 blocks2(1, this->h);
-        matrix_kernel_sum<<<blocks2, THREADS_1D, shared>>>(block_sums, block_sums, amount_blocks);
+        matrix_kernel_sum<<<blocks2, THREADS_1D, shared>>>(block_sums, result.data, amount_blocks);
     }
-    
-    std::vector<float> result(this->h);
-    cudaMemcpy(result.data(), block_sums, this->h * sizeof(size_t), cudaMemcpyDeviceToHost);
+    else 
+        cudaMemcpy(result.data, block_sums, this->h * sizeof(float), cudaMemcpyDeviceToDevice);
+
     cudaFree(block_sums);
 
     return result;
 }
 
-std::vector<size_t>  matrix<CUDA>::argmax()
+matrix<CUDA> matrix<CUDA>::max_device() const
+{
+    size_t mat_size = this->r * this->c;
+    size_t amount_blocks = (mat_size + THREADS_1D - 1 ) / THREADS_1D;
+    size_t shared = THREADS_1D * sizeof(float);
+
+    float* max_values;
+    cudaMalloc(&max_values, this->h * amount_blocks * sizeof(float));
+
+
+    dim3 blocks(amount_blocks, this->h);
+    matrix_kernel_max<<<blocks, THREADS_1D, shared>>>(this->data, max_values, mat_size);
+
+    matrix<CUDA> result = create_stacked_matrix(1,1, this->h);
+    if(amount_blocks > 1)
+    {
+        dim3 blocks2(1, this->h);
+        matrix_kernel_max<<<blocks2, THREADS_1D, shared>>>(max_values, result.data, amount_blocks);
+    }
+    else 
+        cudaMemcpy(result.data, max_values, this->h * sizeof(float), cudaMemcpyDeviceToDevice);
+
+    cudaFree(max_values);
+    return result;
+}
+
+matrix<CUDA> matrix<CUDA>::min_device() const
+{
+    size_t mat_size = this->r * this->c;
+    size_t amount_blocks = (mat_size + THREADS_1D - 1 ) / THREADS_1D;
+    size_t shared = THREADS_1D * sizeof(float);
+
+    float* min_values;
+    cudaMalloc(&min_values, this->h * amount_blocks * sizeof(float));
+
+
+    dim3 blocks(amount_blocks, this->h);
+    matrix_kernel_min<<<blocks, THREADS_1D, shared>>>(this->data, min_values, mat_size);
+
+    matrix<CUDA> result = create_stacked_matrix(1,1, this->h);
+    if(amount_blocks > 1)
+    {
+        dim3 blocks2(1, this->h);
+        matrix_kernel_min<<<blocks2, THREADS_1D, shared>>>(min_values, result.data, amount_blocks);
+    }
+    else 
+        cudaMemcpy(result.data, min_values, this->h * sizeof(float), cudaMemcpyDeviceToDevice);
+
+    cudaFree(min_values);
+    return result;
+}
+
+
+
+
+
+std::vector<float> matrix<CUDA>::sum() const
+{
+    matrix<CUDA> sum = sum_device();
+    std::vector<float> result(this->h);
+    cudaMemcpy(result.data(), sum.data, this->h * sizeof(float), cudaMemcpyDeviceToHost);
+    return result;
+} 
+
+std::vector<float> matrix<CUDA>::L2() const
+{
+    matrix<CUDA> l2 = L2_device();
+    std::vector<float> result(this->h);
+    cudaMemcpy(result.data(), l2.data, this->h * sizeof(float), cudaMemcpyDeviceToHost);
+    return result;
+}
+
+std::vector<size_t>  matrix<CUDA>::argmax() const
 {
     size_t mat_size = this->r * this->c;
     size_t amount_blocks = (mat_size + THREADS_1D - 1 ) / THREADS_1D;
@@ -285,7 +405,7 @@ std::vector<size_t>  matrix<CUDA>::argmax()
     return result;
 }
 
-std::vector<size_t>   matrix<CUDA>::argmin()
+std::vector<size_t>   matrix<CUDA>::argmin() const
 {
     size_t mat_size = this->r * this->c;
     size_t amount_blocks = (mat_size + THREADS_1D - 1 ) / THREADS_1D;
@@ -313,7 +433,24 @@ std::vector<size_t>   matrix<CUDA>::argmin()
     return result;
 }
 
-void  matrix<CUDA>::print()
+std::vector<float> matrix<CUDA>::max() const
+{
+    matrix<CUDA> m = max_device();
+    std::vector<float> result(this->h);
+    cudaMemcpy(result.data(), m.data, this->h * sizeof(float), cudaMemcpyDeviceToHost);
+    return result;
+}
+
+
+std::vector<float> matrix<CUDA>::min() const
+{
+    matrix<CUDA> m = min_device();
+    std::vector<float> result(this->h);
+    cudaMemcpy(result.data(), m.data, this->h * sizeof(float), cudaMemcpyDeviceToHost);
+    return result;
+}
+
+void  matrix<CUDA>::print() const 
 {
     std::vector<float> arr(n);
     cudaMemcpy(arr.data(), this->data, sizeof(float) * n, cudaMemcpyDeviceToHost);
@@ -322,7 +459,7 @@ void  matrix<CUDA>::print()
     for(int l = 0; l < this->h; l++)
     {
         std::cout << "----------- Matrix : " << l << " -----------" << std::endl;
-        size_t offset = l * this->h;
+        size_t offset = l * mat_size();
         for(size_t row = 0; row < this->r; row++)
         {
             for(size_t col = 0; col< this->c; col++)
@@ -335,7 +472,7 @@ void  matrix<CUDA>::print()
 
 }
 
-void  matrix<CUDA>::print_size()
+void  matrix<CUDA>::print_size() const
 {
     std::cout << r << " " << c << " " << h << std::endl;
 }
@@ -343,7 +480,7 @@ void  matrix<CUDA>::print_size()
 void  matrix<CUDA>::set(float val)
 {
     std::vector<float> arr(n, val);
-    cudaMemcpy(this->data, arr.data(), sizeof(float) * n , cudaMemcpyHostToDevice);
+    cudaMemcpy(this->data, arr.data(), sizeof(float) * n, cudaMemcpyHostToDevice);    
 }
 
 matrix<CUDA>  matrix<CUDA>::sqrt(const matrix<CUDA> &a)
@@ -352,7 +489,7 @@ matrix<CUDA>  matrix<CUDA>::sqrt(const matrix<CUDA> &a)
     matrix<CUDA> res = a;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
-    matrix_kernel_sqrt<<<blocks, THREADS_1D>>>(res.data, res.n);
+    matrix_kernel_sqrt<<<blocks, THREADS_1D>>>(a.data, res.data, res.n);
     return res;
 }
 
@@ -361,7 +498,7 @@ matrix<CUDA>  matrix<CUDA>::square(const matrix<CUDA> &a)
     matrix<CUDA> res = a;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
-    matrix_kernel_square<<<blocks, THREADS_1D>>>(res.data, res.n);
+    matrix_kernel_square<<<blocks, THREADS_1D>>>(a.data, res.data, res.n);
     return res;
 }
 
@@ -370,16 +507,86 @@ matrix<CUDA>  matrix<CUDA>::reciprocal(const matrix<CUDA> &a)
     matrix<CUDA> res = a;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
-    matrix_kernel_reciprocal<<<blocks, THREADS_1D>>>(res.data, res.n);
+    matrix_kernel_reciprocal<<<blocks, THREADS_1D>>>(a.data, res.data, res.n);
+    return res;
+}
+
+matrix<CUDA> matrix<CUDA>::exp(const matrix<CUDA> &a)
+{
+    matrix<CUDA> res = a;
+    size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
+
+    matrix_kernel_exp<<<blocks, THREADS_1D>>>(a.data, res.data, res.n);
+    return res;
+}
+
+matrix<CUDA> matrix<CUDA>::log2(const matrix<CUDA> &a)
+{
+    matrix<CUDA> res = a;
+    size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
+
+    matrix_kernel_log2<<<blocks, THREADS_1D>>>(a.data, res.data, res.n);
     return res;
 }
 
 
 
 
+float matrix<CUDA>::operator[](size_t index) const
+{
+    float v;
+    cudaMemcpy(&v, &data[index], sizeof(float), cudaMemcpyDeviceToHost);
+    return v;
+}
+
+void matrix<CUDA>::set(size_t index, float val)
+{
+    cudaMemcpy(&data[index], &val, sizeof(float), cudaMemcpyHostToDevice);
+}
+
+matrix<CUDA>& matrix<CUDA>::operator=(const matrix<CUDA>& other)
+{
+    if (this != &other) {
+        if (data) 
+            cudaFree(data); 
+        r = other.r;
+        c = other.c;
+        n = other.n;
+        h = other.h;
+        cudaMalloc(&data, n * sizeof(float));
+        cudaMemcpy(data, other.data, n * sizeof(float), cudaMemcpyDeviceToDevice);
+
+    }
+    return *this;
+}
+
+matrix<CUDA>& matrix<CUDA>::operator=(matrix<CUDA>&& other) noexcept
+{
+    if (this != &other) 
+    {
+        if (data) 
+            cudaFree(data);  
+        r = other.r;
+        c = other.c;
+        h = other.h;
+        n = other.n;
+        data = other.data;      
+        other.data = nullptr;      
+        other.r = other.c = other.n = other.h = 0;
+    }
+    return *this;
+}
+
+
+
 matrix<CUDA> matrix<CUDA>::operator%(const matrix<CUDA> &a) const
 {
-    matrix<CUDA> res = a;
+
+
+    if(this->r != a.rows() || this->c != a.columns())
+        throw std::runtime_error("% : matrix shapes need to be equal ");
+
+    matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
     matrix_kernel_hadamard<<<blocks, THREADS_1D>>>(a.data, this->data, res.data, res.n);
@@ -387,16 +594,20 @@ matrix<CUDA> matrix<CUDA>::operator%(const matrix<CUDA> &a) const
 }
 
 matrix<CUDA> matrix<CUDA>::operator+(const matrix<CUDA> &a) const
-{
-    matrix<CUDA> res = a;
+{  
+    if(this->r != a.rows() || this->c != a.columns())
+        throw std::runtime_error("+ : matrix shapes need to be equal ");
+
+    matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
-    matrix_kernel_add<<<blocks, THREADS_1D>>>(a.data, this->data, res.data, res.n);
+    matrix_kernel_add<<<blocks, THREADS_1D>>>(this->data, a.data, res.data, res.n);
     return res;
 }
 
 matrix<CUDA> matrix<CUDA>::operator+(const float &a) const
 {
+
     matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
@@ -406,10 +617,13 @@ matrix<CUDA> matrix<CUDA>::operator+(const float &a) const
 
 matrix<CUDA> matrix<CUDA>::operator-(const matrix<CUDA> &a) const
 {
-    matrix<CUDA> res = a;
+    if(this->r != a.rows() || this->c != a.columns())
+        throw std::runtime_error("- : matrix shapes need to be equal ");
+
+    matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
 
-    matrix_kernel_sub<<<blocks, THREADS_1D>>>(a.data, this->data, res.data, res.n);
+    matrix_kernel_sub<<<blocks, THREADS_1D>>>(this->data, a.data , res.data, res.n);
     return res;
 }
 
@@ -473,23 +687,22 @@ matrix<CUDA> operator-(float val, const matrix<CUDA> &a)
 
 matrix<CUDA> matrix<CUDA>::operator+=(const matrix<CUDA> &a)
 {
-    matrix<CUDA> res = *this + a;
-    return res;
+    *this = *this + a;
+    return *this;
 }
 
 matrix<CUDA> matrix<CUDA>::operator-=(const matrix<CUDA> &a)
 {
-    matrix<CUDA> res = *this - a;
-    return res;
+    *this = *this - a;
+    return *this;
 }
 
 matrix<CUDA> matrix<CUDA>::transpose(const matrix<CUDA> &a)
 {
     matrix<CUDA> result = create_stacked_matrix(a.columns(), a.rows(), a.height());
-    dim3 threads(256);
     dim3 blocks((a.mat_size() + 255) / 256, a.height());
 
-    matrix_kernel_transpose<<<blocks, threads>>>(a.data, result.data, result.rows(), result.columns(), result.size());
+    matrix_kernel_transpose<<<blocks, 256>>>(a.data, result.data, result.rows(), result.columns(), result.size());
     return result;
 }
 

@@ -94,21 +94,20 @@ matrix<CPU> activation<CPU>::tanh(const matrix<CPU> &a)
 
 matrix<CPU> activation<CPU>::softmax(const matrix<CPU> &a)
 {
+
+    // wrong!
     matrix<CPU> result = a;
 
-    // 1. Finde den Maximalwert in der Matrix
     float max_val = a[0];
     for(int i = 1; i < a.size(); i++) {
         if(a[i] > max_val) max_val = a[i];
     }
 
-    // 2. Summe berechnen mit (a[i] - max_val)
     float exp_sum = 0;
     for(int i = 0; i < a.size(); i++) {
         exp_sum += std::exp(a[i] - max_val);
     }
 
-    // 3. Ergebnis berechnen
     for(int i = 0; i < result.size(); i++) {
         result[i] = std::exp(a[i] - max_val) / exp_sum;
     }

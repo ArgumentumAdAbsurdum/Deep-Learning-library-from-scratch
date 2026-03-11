@@ -4,6 +4,7 @@
 #include "vector"
 
 
+
 template<typename Backend>
 class model;
 
@@ -15,7 +16,8 @@ class neuralnetwork;
 
 #ifdef ENABLE_CUDA
     #include "modelCUDA.cuh"
-
+    using Dataset = dataset<CUDA>;
+    using NeuralNetwork = neuralnetwork<CUDA>;
 #else
     #include "modelCPU.h"
     using NeuralNetwork = neuralnetwork<CPU>;

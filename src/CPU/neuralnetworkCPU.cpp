@@ -34,7 +34,7 @@ void neuralnetwork<CPU>::set_loss_weights(const std::vector<float> w)
     if(output_layer_neurons != w.size())
         throw std::runtime_error("set_loss_weight : Weight size needs to be equal to output layer size");
     
-    this->loss_function_class.weights = matrix<CPU>(w.size(), 1, w);
+    this->loss_function_class.weights = matrix<CPU>(w.size(), 1 , w);
 }
 
 void neuralnetwork<CPU>::configure_input_layer(const size_t neurons)

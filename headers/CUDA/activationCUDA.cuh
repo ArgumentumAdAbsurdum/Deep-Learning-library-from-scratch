@@ -18,7 +18,7 @@ using optimizer_type = const size_t;
 template<>
 class activation<CUDA>
 {   
-private:
+public:
     static matrix<CUDA> ones(const matrix<CUDA>& a);
     static matrix<CUDA> identity(const matrix<CUDA>& a);
     static matrix<CUDA> relu(const matrix<CUDA>& a);
@@ -60,7 +60,7 @@ public:
 template<>
 class loss<CUDA>
 {  
-private:
+public:
 
 
     matrix<CUDA> cross_entropy(const matrix<CUDA> &expected, const matrix<CUDA> &result);

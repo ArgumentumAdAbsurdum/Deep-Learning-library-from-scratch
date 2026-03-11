@@ -31,7 +31,7 @@ else()
     include_directories(headers/CPU)
     set(SOURCES 
         src/main.cpp 
-        src/CPU/dataset.cpp
+        src/CPU/datasetCPU.cpp
         src/CPU/matrixCPU.cpp 
         src/CPU/activationCPU.cpp
         src/CPU/neuralnetworkCPU.cpp

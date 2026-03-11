@@ -12,10 +12,12 @@ private:
     size_t r,c, h;
     size_t n;
 
-    static constexpr int THREADS_1D = 256;
-    static constexpr int THREADS_2D = 16;
+
 
 public:
+
+    static constexpr int THREADS_1D = 256;
+    static constexpr int THREADS_2D = 16;
 
     matrix();
     matrix<CUDA>(const matrix<CUDA>& other);
@@ -33,8 +35,16 @@ public:
     static matrix<CUDA> create_stacked_matrix(const size_t rows, const size_t columns, const size_t height, float start, float end);
     static matrix<CUDA> create_stacked_matrix(matrix<CUDA>* begin, matrix<CUDA>* end);
 
-    static matrix<CUDA> add_mat_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
+    static matrix<CUDA> bcast_add_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
+    static matrix<CUDA> bcast_reversed_mat_mul_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
+    static matrix<CUDA> bcast_scale_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
 
+
+    float operator[](size_t index) const;
+    void set(size_t index, float val);
+
+    matrix<CUDA>& operator=(const matrix<CUDA>& other);
+    matrix<CUDA>& operator=(matrix<CUDA>&& other) noexcept;
 
     matrix<CUDA> operator%(const matrix<CUDA> &a) const;
     matrix<CUDA> operator+(const matrix<CUDA> &a) const;
@@ -46,7 +56,7 @@ public:
     matrix<CUDA> operator+=(const matrix<CUDA> &a);
     matrix<CUDA> operator-=(const matrix<CUDA> &a);
 
-    matrix<CUDA> transpose(const matrix<CUDA> &a);
+    static matrix<CUDA> transpose(const matrix<CUDA> &a);
 
 
      
@@ -58,20 +68,33 @@ public:
 
     bool empty() const;
     float* raw();
+    float* raw() const;
+    std::vector<float> values();
+
+    matrix<CUDA> min_device() const;
+    matrix<CUDA> max_device() const;
+    matrix<CUDA> sum_device() const; 
+    matrix<CUDA> L2_device() const;
+    
+    std::vector<float> sum() const; 
+    std::vector<float> L2() const;
+    std::vector<size_t> argmax() const;
+    std::vector<size_t> argmin() const;
+    std::vector<float> max() const;
+    std::vector<float> min() const;
 
 
-    std::vector<float> sum(); 
-    std::vector<float> L2();
-    std::vector<size_t> argmax();
-    std::vector<size_t> argmin();
 
-    void print();
-    void print_size();
+
+    void print() const;
+    void print_size() const;
     void set(float val);
 
     static matrix<CUDA> sqrt(const matrix<CUDA> &a);
     static matrix<CUDA> square(const matrix<CUDA> &a);
     static matrix<CUDA> reciprocal(const matrix<CUDA> &a);
+    static matrix<CUDA> exp(const matrix<CUDA> &a);
+    static matrix<CUDA> log2(const matrix<CUDA> &a);
 
 
 
