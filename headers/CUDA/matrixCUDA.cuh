@@ -3,6 +3,7 @@
 #include <vector>
 #include <iostream>
 #include <numeric>
+#include <unordered_map>
 
 template<>
 class matrix<CUDA> 
@@ -12,8 +13,8 @@ private:
     size_t r,c, h;
     size_t n;
 
-
-
+    bool owns_memory = true;
+    
 public:
 
     static constexpr int THREADS_1D = 256;
@@ -22,21 +23,25 @@ public:
     matrix();
     matrix<CUDA>(const matrix<CUDA>& other);
     matrix<CUDA>(matrix<CUDA>&& other) noexcept;
-
     matrix<CUDA>(const size_t rows, const size_t columns);
     matrix<CUDA>(const size_t rows, const size_t columns, const std::vector<float>& values);
     matrix<CUDA>(const size_t rows, const size_t columns, float val);
     matrix<CUDA>(const size_t rows, const size_t columns, float start, float end);
+    matrix<CUDA>(float* ptr, const size_t rows, const size_t columns, const size_t height);
     ~matrix<CUDA>();
 
     static matrix<CUDA> create_stacked_matrix(const size_t rows, const size_t columns, const size_t height);
     static matrix<CUDA> create_stacked_matrix(const size_t rows, const size_t columns, const size_t height, const std::vector<float>& values);
     static matrix<CUDA> create_stacked_matrix(const size_t rows, const size_t columns, const size_t height, float val);
     static matrix<CUDA> create_stacked_matrix(const size_t rows, const size_t columns, const size_t height, float start, float end);
-    static matrix<CUDA> create_stacked_matrix(matrix<CUDA>* begin, matrix<CUDA>* end);
 
+    matrix<CUDA> slice_stacked_matrix(size_t start, size_t end);
+
+    static matrix<CUDA> reduce_sum(const matrix<CUDA> &a);
     static matrix<CUDA> bcast_add_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
+    static matrix<CUDA> bcast_hadamard_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
     static matrix<CUDA> bcast_reversed_mat_mul_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
+    static matrix<CUDA> bcast_mat_mul_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
     static matrix<CUDA> bcast_scale_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b);
 
 
@@ -104,3 +109,44 @@ matrix<CUDA> operator*(float val, const matrix<CUDA>& a);
 matrix<CUDA> operator+(float val, const matrix<CUDA>& a);
 matrix<CUDA> operator-(float val, const matrix<CUDA>& a);
 
+
+template<>
+class memory_pool<CUDA>
+{
+    std::unordered_map<size_t, std::vector<float*>> free_blocks;
+
+public:
+    static memory_pool<CUDA>& instance()
+    {
+        static memory_pool<CUDA> pool;
+        return pool;
+    }
+
+    float* malloc(size_t n)
+    {
+        auto& blocks = free_blocks[n];
+        if(!blocks.empty())
+        {
+            float* ptr = blocks.back();
+            blocks.pop_back();
+            return ptr;
+        }
+        float *ptr;
+        cudaMalloc(&ptr, n * sizeof(float));
+        return ptr;
+    }
+
+    void demalloc(float* ptr, size_t n) 
+    {
+        if(ptr == nullptr) return;
+        free_blocks[n].push_back(ptr);
+    }
+
+    ~memory_pool<CUDA>() 
+    {
+        for (auto& [size, blocks] : free_blocks)
+            for (float* ptr : blocks)
+                cudaFree(ptr);
+    }
+
+};

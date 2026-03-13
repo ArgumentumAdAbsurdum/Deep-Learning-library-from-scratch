@@ -228,7 +228,8 @@ activation_fn activation<CUDA>::get_derivative_fn(activation_type atype)
 matrix<CUDA> loss<CUDA>::cross_entropy(const matrix<CUDA> &probability, const matrix<CUDA> &expected)
 {
     matrix<CUDA> prod = matrix<CUDA>::log2(probability) % expected;
-    matrix<CUDA> weighted_prod = matrix<CUDA>::bcast_reversed_mat_mul_to_stacked_matrix(prod, this->weights);
+
+    matrix<CUDA> weighted_prod = matrix<CUDA>::bcast_hadamard_to_stacked_matrix(prod, this->weights);
 
     return weighted_prod.sum_device() * (-1);
 }
@@ -237,7 +238,7 @@ matrix<CUDA> loss<CUDA>::quadratic(const matrix<CUDA> &probability, const matrix
 {
     matrix<CUDA> sq_err = matrix<CUDA>::square(probability - expected);
 
-    matrix<CUDA> weighted_sq_err = matrix<CUDA>::bcast_reversed_mat_mul_to_stacked_matrix(sq_err, this->weights);
+    matrix<CUDA> weighted_sq_err = matrix<CUDA>::bcast_hadamard_to_stacked_matrix(sq_err, this->weights);
     
 
     return  weighted_sq_err * (1 / (float)expected.mat_size());
@@ -249,7 +250,7 @@ matrix<CUDA> loss<CUDA>::dcross_entropy(const matrix<CUDA> &probability, const m
     matrix<CUDA> grad(probability.rows(), probability.columns(), 0);
 
     matrix<CUDA> prod = expected % matrix<CUDA>::reciprocal(probability) * (-1);
-    matrix<CUDA> weighted_prod = matrix<CUDA>::bcast_scale_to_stacked_matrix(prod, this->weights);
+    matrix<CUDA> weighted_prod = matrix<CUDA>::bcast_hadamard_to_stacked_matrix(prod, this->weights);
 
     return weighted_prod;
 }
@@ -257,8 +258,10 @@ matrix<CUDA> loss<CUDA>::dcross_entropy(const matrix<CUDA> &probability, const m
 matrix<CUDA> loss<CUDA>::dcross_entropy_inkl_softmax(const matrix<CUDA> &probability, const matrix<CUDA> &expected)
 {
     matrix<CUDA> err = probability - expected;
+    
 
-    matrix<CUDA> weighted_err = matrix<CUDA>::bcast_scale_to_stacked_matrix(err, this->weights);
+    matrix<CUDA> weighted_err = matrix<CUDA>::bcast_hadamard_to_stacked_matrix(err, this->weights);
+    
 
     return weighted_err;
 }
@@ -267,7 +270,8 @@ matrix<CUDA> loss<CUDA>::dquadratic(const matrix<CUDA> &probability, const matri
 {
     matrix<CUDA> err = probability - expected;
 
-    matrix<CUDA> weighted_err = matrix<CUDA>::bcast_scale_to_stacked_matrix(err, this->weights);
+    matrix<CUDA> weighted_err = matrix<CUDA>::bcast_hadamard_to_stacked_matrix(err, this->weights);
+
 
     return  weighted_err * 2;
 }

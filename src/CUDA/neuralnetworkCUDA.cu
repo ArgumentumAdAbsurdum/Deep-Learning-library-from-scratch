@@ -34,7 +34,7 @@ void neuralnetwork<CUDA>::set_loss_weights(const std::vector<float> w)
     if(output_layer_neurons != w.size())
         throw std::runtime_error("set_loss_weight : Weight size needs to be equal to output layer size");
     
-    this->loss_function_class.weights = matrix<CUDA>::create_stacked_matrix(1, 1, w.size() , w);
+    this->loss_function_class.weights = matrix<CUDA>::create_stacked_matrix(w.size(), 1, 1 , w);
 }
 
 void neuralnetwork<CUDA>::configure_input_layer(const size_t neurons)
@@ -75,7 +75,7 @@ void neuralnetwork<CUDA>::initalise_random_weights(float begin, float end)
 
 
     if(this->loss_function_class.weights.empty())
-        this->loss_function_class.weights = matrix<CUDA>::create_stacked_matrix(1, 1,this->output_layer_neurons, 1);
+        this->loss_function_class.weights = matrix<CUDA>::create_stacked_matrix(this->output_layer_neurons,1, 1, 1);
 
     lfunc = loss_function_class.get_fn(lfunc_type);
     lfunc_dx = loss_function_class.get_derivative_fn(lfunc_type, afunc_type.back());
@@ -115,7 +115,7 @@ void neuralnetwork<CUDA>::initalise_xavier_weights()
 
 
     if(this->loss_function_class.weights.empty())
-        this->loss_function_class.weights = matrix<CUDA>(1, 1, this->output_layer_neurons, 1);
+        this->loss_function_class.weights = matrix<CUDA>(this->output_layer_neurons,1, 1,  1);
 
     lfunc = loss_function_class.get_fn(lfunc_type);
     lfunc_dx = loss_function_class.get_derivative_fn(lfunc_type, afunc_type.back());
@@ -155,7 +155,7 @@ void neuralnetwork<CUDA>::initalise_he_weights()
 
 
     if(this->loss_function_class.weights.empty())
-        this->loss_function_class.weights = matrix<CUDA>(1, 1, this->output_layer_neurons, 1);
+        this->loss_function_class.weights = matrix<CUDA>(this->output_layer_neurons, 1, 1,  1);
 
     lfunc = loss_function_class.get_fn(lfunc_type);
     lfunc_dx = loss_function_class.get_derivative_fn(lfunc_type, afunc_type.back());
@@ -179,8 +179,8 @@ matrix<CUDA> neuralnetwork<CUDA>::run(const matrix<CUDA> &input)
     {
 
         matrix<CUDA> prod = weight_matrices[i] * result + bias_matrices[i];
-        
         result = afunc[i](prod);
+        
     }
 
     return result;
@@ -197,9 +197,7 @@ std::vector<matrix<CUDA>> neuralnetwork<CUDA>::layer_outputs(const matrix<CUDA> 
     for(int i = 0; i < neurons_per_layer.size() - 1; i++)
     {
         matrix<CUDA> prod = weight_matrices[i] * current + bias_matrices[i];
-        
         current = afunc[i](prod);
-
         outputs[i+1] = current;
     }
     return outputs;
@@ -209,7 +207,6 @@ std::vector<matrix<CUDA>> neuralnetwork<CUDA>::layer_outputs(const matrix<CUDA> 
 void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds, double lr , double lambda, size_t batch_size)
 {
 
-    
     std::vector<matrix<CUDA>> wgradients;
     wgradients.resize(weight_matrices.size());
 
@@ -218,89 +215,93 @@ void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds
 
     std::random_device dev;
     std::mt19937 rng(dev());
-    std::uniform_int_distribution<std::mt19937::result_type> dist(0, ds.input.size() / batch_size - 1); 
-
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, ds.input.height() / batch_size - 1); 
 
     for(size_t i = 0; i < weight_matrices.size(); i++)
     {
-        wgradients[i] = matrix<CUDA>(weight_matrices[i].rows(), weight_matrices[i].columns(), 0);
-        bgradients[i] = matrix<CUDA>(bias_matrices[i].rows(), 1, 0);
+        wgradients[i] = matrix<CUDA>::create_stacked_matrix(weight_matrices[i].rows(), weight_matrices[i].columns(), batch_size, 0.0f);
+        bgradients[i] = matrix<CUDA>::create_stacked_matrix(bias_matrices[i].rows(), 1, batch_size, 0.0f);
     }
 
     for(size_t step = 0; step < steps; step++)
     {
+
+        std::cout << "step : " << step << std::endl;
 
         for(size_t i = 0; i < weight_matrices.size(); i++)
         {
             wgradients[i].set(0);
             bgradients[i].set(0);
         }
+    
         
-        size_t start = dist(rng);
+        size_t batchidx = dist(rng);
+        size_t start = batchidx * batch_size;
+        size_t end   = std::min(start + batch_size, ds.input.height());
+        
         std::vector<matrix<CUDA>> Z;
         Z.reserve(this->weight_matrices.size() + 1);
+ 
+        matrix<CUDA> input = ds.input.slice_stacked_matrix(start, end); 
+        matrix<CUDA> truth = ds.expected.slice_stacked_matrix(start, end); 
 
 
-        for(size_t pos = start; pos < start + batch_size; pos++)
-        {
-            matrix<CUDA> &input_value = ds.input[pos];
-            matrix<CUDA> &truth_value = ds.expected[pos];
-            Z = layer_outputs(input_value);
+        Z = layer_outputs(input);
+        ssize_t index = Z.size() - 1;
+
+        matrix<CUDA> delta = lfunc_dx(Z[index], truth) % afunc_dx[index-1](weight_matrices[index-1] * Z[index-1] + bias_matrices[index-1]);
+
+        wgradients[index-1] = delta * matrix<CUDA>::transpose(Z[index-1]);
+        bgradients[index-1] = delta;
 
 
-            ssize_t index = Z.size() - 1;
-            
-            
-            matrix<CUDA> delta = lfunc_dx(Z[index], truth_value) % afunc_dx[index-1](weight_matrices[index-1] * Z[index-1] + bias_matrices[index-1]); 
-
-            
-            wgradients[index-1] += delta * matrix<CUDA>::transpose(Z[index-1]);
-
-            //std::cout << "//" << std::endl;
-           // wgradients[index-1].print();
-            //matrix<CUDA>::transpose(Z[index-1]).print();
-
-            bgradients[index-1] += delta;
-            
-            index-= 2;
-            for(; index >= 0; index--)                  // HIER!!!!!
-            {    
+        //Z[index].print();
     
-                matrix<CUDA> weight_transposed = matrix<CUDA>::transpose(weight_matrices[index+1]);
+        //lfunc_dx(Z[index], truth).print();
+
+
         
-                delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Z[index] + bias_matrices[index]);
+
+
+
+        index-= 2;
+        for(; index >= 0; index--)                  
+        {    
+            matrix<CUDA> weight_transposed = matrix<CUDA>::transpose(weight_matrices[index+1]);
+        
+            delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Z[index] + bias_matrices[index]);
                 
-                wgradients[index] += delta * matrix<CUDA>::transpose(Z[index]);
-                bgradients[index] += delta;
-            }
-            
+            wgradients[index] = delta * matrix<CUDA>::transpose(Z[index]);
+            bgradients[index] = delta;
         }
+         
+
+
 
         const float n = (float) batch_size;
-        
         if(lambda != 0.0f)
         {
             for(size_t i = 0; i < weight_matrices.size(); i++)
             {
-                weight_matrices[i] = weight_matrices[i] * (1 - lr * lambda / n) - (lr / n) * wgradients[i];
-                bias_matrices[i] = bias_matrices[i] * (1 - lr * lambda / n ) - (lr / n) * bgradients[i];
+                weight_matrices[i] -= weight_matrices[i] * (1 - lr * lambda / n) - lr * (1/n * matrix<CUDA>::reduce_sum(wgradients[i]));
+                bias_matrices[i] -= bias_matrices[i] * (1 - lr * lambda / n ) - lr * (1/n * matrix<CUDA>::reduce_sum(bgradients[i]));
             }
         }
         else
         {
-            
-
             for(size_t i = 0; i < weight_matrices.size(); i++)
             {
-                weight_matrices[i] -=  (lr / n)  * wgradients[i];
-                bias_matrices[i] -=  (lr / n) * bgradients[i];
+                weight_matrices[i] -=  (lr / n)  * matrix<CUDA>::reduce_sum(wgradients[i]);
+                bias_matrices[i] -=  (lr / n) * matrix<CUDA>::reduce_sum(bgradients[i]);
             }
-         
-
         }
 
-
     }
+
+
+
+
+
 }
 
 
@@ -318,17 +319,17 @@ void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA>& ds, optimizer_
     switch(ofunc)
     {
         case optimizer<CUDA>::STOCHASTIC_GRADIENT_DESCENT:
-            steps = epochs * ds.input.size(); 
+            steps = epochs * ds.input.height(); 
             gradient_descent(steps, ds, lr, 0.0f, 1);
             break;
 
         case optimizer<CUDA>::BATCH_GRADIENT_DESCENT:
             steps = epochs;
-            gradient_descent(steps, ds, lr, 0.0f, ds.input.size());
+            gradient_descent(steps, ds, lr, 0.0f, ds.input.height());
             break;
 
         case optimizer<CUDA>::MIN_BATCH_GRADIENT_DESCENT:
-            steps = epochs * (ds.input.size() / batch_size);
+            steps = epochs * (ds.input.height() / batch_size);
             gradient_descent(steps, ds, lr, 0.0f, batch_size);
             break;
     }
@@ -361,7 +362,7 @@ void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, optimizer_
 
 void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, adam_optimizer<CUDA> &adam)
 {
-
+    /*
     const size_t steps = epochs * (ds.input.size() / adam.batch_size);
     size_t current_epoch = 0;
 
@@ -485,32 +486,28 @@ void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, adam_optim
         }
 
     }
+    */
 }
 
 void neuralnetwork<CUDA>::performance(dataset<CUDA> &ds, std::string name)
 {
+   
+    float accuracy = 0;
 
-    double rmsqe = 0;
-    double accuracy = 0;
+    std::vector<size_t> p = run(ds.input).argmax();
+    std::vector<size_t> e = ds.expected.argmax();
 
-    
-    for(size_t i = 0; i < ds.input.size(); i++)
+    for(int i = 0; i < ds.input.height(); i++)
     {
-        matrix<CUDA> pred = run(ds.input[i]);
-        matrix<CUDA> diff = (pred - ds.expected[i]);
-        double l2 = diff.L2()[0];
-        rmsqe += l2 *l2;
-        accuracy += (pred.argmax()[0] == ds.expected[i].argmax()[0]);
 
+        accuracy += (p[i] == e[i]);
+    }
+    
 
-    }   
-
-    rmsqe = std::sqrt(rmsqe / ds.input.size());
-    accuracy /= ds.input.size();
+    accuracy /= ds.input.height();
 
     std::cout << "[PERFORMANCE RESULTS FOR DATASET : " << name << "]" << std::endl;
     std::cout << "[ => Accuracy : " << accuracy << "]" <<  std::endl;
-    std::cout << "[ => RMSQE : " << rmsqe << "]" << std::endl;
 
 }
 
@@ -521,7 +518,7 @@ void neuralnetwork<CUDA>::performance(dataset<CUDA> &ds)
 
 void neuralnetwork<CUDA>::binary_confusion_matrix(dataset<CUDA> &ds, const float threshold)
 {
-
+/*
     if(output_layer_neurons != 2)
         throw std::runtime_error("binary_confusion_matrix : output needs to be binary.");
 
@@ -552,7 +549,7 @@ void neuralnetwork<CUDA>::binary_confusion_matrix(dataset<CUDA> &ds, const float
     std::cout << "[ => Precision : " << precision << " ]" << std::endl;;
     std::cout << "[ => Recall    : " << recall    << " ]" << std::endl;;
     std::cout << "[ => F1        : " << f1        << " ]" << std::endl;
-
+*/
 }
 
 
@@ -630,7 +627,7 @@ void neuralnetwork<CUDA>::load_weights(const std::string &filename)
 
 
     if(this->loss_function_class.weights.empty())
-        this->loss_function_class.weights = matrix<CUDA>::create_stacked_matrix(1,1, this->output_layer_neurons, 1);
+        this->loss_function_class.weights = matrix<CUDA>::create_stacked_matrix(this->output_layer_neurons, 1,1,  1);
 
     this->lfunc = loss_function_class.get_fn(this->lfunc_type);
     this->lfunc_dx = loss_function_class.get_derivative_fn(this->lfunc_type, afunc_type.back());

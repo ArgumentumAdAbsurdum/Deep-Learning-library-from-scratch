@@ -267,7 +267,19 @@ __global__ void matrix_kernel_mat_mul(const float *A, const float *B, float *res
     }
     result[offset_result + row * result_cols + column] = sum;
 }
- 
+
+
+__global__ void matrix_kernel_reduce_sum(const float *A, float *result, const size_t mat_size, const size_t n)
+{
+    size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t offset = blockIdx.y * mat_size;
+
+    if(i >= mat_size || offset + i >= n)
+        return;
+
+    atomicAdd(&result[i], A[offset + i]);
+}
+
 __global__ void matrix_kernel_bcast_add_to_stacked_matrix(const float *A, const float *B, float *result, const size_t mat_size, const size_t n)
 {       
     size_t i = blockIdx.x * blockDim.x + threadIdx.x;
@@ -278,6 +290,7 @@ __global__ void matrix_kernel_bcast_add_to_stacked_matrix(const float *A, const 
 
     result[offset + i] = A[offset + i] + B[i]; 
 }
+
 
 __global__ void matrix_kernel_bcast_reversed_mat_mul_to_stacked_matrix(const float *A, const float *B, float *result, const size_t result_rows, const size_t result_cols, const size_t length)
 {
@@ -298,17 +311,46 @@ __global__ void matrix_kernel_bcast_reversed_mat_mul_to_stacked_matrix(const flo
     result[offset_result + row * result_cols + column] = sum;
 }
 
+__global__ void matrix_kernel_bcast_mat_mul_to_stacked_matrix(const float *A, const float *B, float *result, const size_t result_rows, const size_t result_cols, const size_t length)
+{
+    size_t row = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t column = blockIdx.y * blockDim.y + threadIdx.y;
+    size_t layer = blockIdx.z;
+
+    size_t offset_a = layer * (result_rows * length);
+    size_t offset_result = layer * (result_rows * result_cols);
+
+    if(row >= result_rows || column >= result_cols) return;
+
+    float sum = 0;
+    for(size_t i = 0; i < length; i++)
+    {
+        sum += A[offset_a + row * length + i] * B[column + i * result_cols ]; 
+    }
+    result[offset_result + row * result_cols + column] = sum;
+}
+
 __global__ void matrix_kernel_bcast_scale_to_stacked_matrix(const float *A, const float *B, float *result, const size_t mat_size, const size_t n)
 {
     size_t i = blockIdx.x * blockDim.x + threadIdx.x;
     size_t layer = blockIdx.y;
     size_t offset = blockIdx.y * mat_size;
     
-
     if(i >= mat_size || offset + i >= n)
         return;
 
     result[offset + i] = A[offset + i] * B[layer]; 
+}
+
+__global__ void matrix_kernel_bcast_hadamard_to_stacked_matrix(const float *A, const float *B, float *result, const size_t mat_size, const size_t n)
+{
+    size_t i = blockIdx.x * blockDim.x + threadIdx.x;
+    size_t offset = blockIdx.y * mat_size;
+    
+    if(i >= mat_size || offset + i >= n)
+        return;
+
+    result[offset + i] = A[offset + i] * B[i]; 
 }
 
 __global__ void matrix_kernel_transpose(const float* A, float* result, const size_t result_rows, const size_t result_columns, const size_t n)

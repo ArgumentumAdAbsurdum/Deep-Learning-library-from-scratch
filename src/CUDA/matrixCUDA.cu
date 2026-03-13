@@ -62,9 +62,15 @@ matrix<CUDA>::matrix(const size_t rows, const size_t columns, float start, float
 
 }
 
+matrix<CUDA>::matrix(float *ptr, const size_t rows, const size_t columns, const size_t height) : data(ptr), r(rows), c(columns), h(height), owns_memory(false)
+{
+    this->n = rows * columns * height;
+}
+
 matrix<CUDA>::~matrix()
 {
-    cudaFree(this->data);
+    if(owns_memory)
+        cudaFree(this->data);
 }
 
 
@@ -119,29 +125,34 @@ matrix<CUDA> matrix<CUDA>::create_stacked_matrix(const size_t rows, const size_t
     return result;
 }
 
-matrix<CUDA> matrix<CUDA>::create_stacked_matrix(matrix<CUDA>* begin, matrix<CUDA>* end)
-{
-    size_t height = end - begin;
-    size_t size = begin->size();
-    matrix<CUDA> result = create_stacked_matrix(begin->rows(), begin->columns(), height);
 
-    matrix<CUDA>* mat = begin;
-    for(size_t i = 0; i < height; i++ )
-    {
-        if(mat->size() != size)
-            throw std::runtime_error("create_stacked_matrix : Matrices inside the array need to have the same size.");
 
-        cudaMemcpy(result.data + i * size , mat->data, size * sizeof(float), cudaMemcpyDeviceToDevice);
-        mat++;
-    }
-    return result;
+matrix<CUDA> matrix<CUDA>::slice_stacked_matrix(size_t start, size_t end)
+{   
+    if(this->h < end)
+        throw std::runtime_error("slice_stacked_matrix : matrix height to small.");
+
+    return matrix<CUDA>(this->data + start * mat_size(), r,c, end - start);
 }
-
 
 // ------------------------------------------
 
+matrix<CUDA> matrix<CUDA>::reduce_sum(const matrix<CUDA> &a)
+{
+    matrix<CUDA> result(a.rows(), a.columns(), 0);
+    size_t mat_size = a.mat_size();
+        
+    dim3 threads(256);
+    dim3 blocks(
+        (mat_size + 255) / 256,             
+        a.h
+    );
 
-matrix<CUDA> matrix<CUDA>::bcast_add_to_stacked_matrix(const matrix<CUDA>& a, const matrix<CUDA>& b)
+    matrix_kernel_reduce_sum<<<blocks, threads>>>(a.data, result.data, mat_size, a.size());
+    return result;
+}
+
+matrix<CUDA> matrix<CUDA>::bcast_add_to_stacked_matrix(const matrix<CUDA> &a, const matrix<CUDA> &b)
 {   
 
     size_t mat_size = a.mat_size();
@@ -157,6 +168,23 @@ matrix<CUDA> matrix<CUDA>::bcast_add_to_stacked_matrix(const matrix<CUDA>& a, co
 
     matrix<CUDA> result = a;
     matrix_kernel_bcast_add_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, mat_size, a.size());
+    return result;
+}
+
+matrix<CUDA> matrix<CUDA>::bcast_hadamard_to_stacked_matrix(const matrix<CUDA> &a, const matrix<CUDA> &b)
+{
+    size_t mat_size = a.mat_size();
+    if(b.height() != 1 )
+        throw std::runtime_error("bcast_hadamard_to_stacked_matrix : height needs to be equal to 1");    
+    
+    dim3 threads(256);
+    dim3 blocks(
+        (mat_size + 255) / 256,            
+        a.h
+    );
+
+    matrix<CUDA> result = a;
+    matrix_kernel_bcast_hadamard_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, mat_size, a.size());
     return result;
 }
 
@@ -181,11 +209,24 @@ matrix<CUDA> matrix<CUDA>::bcast_reversed_mat_mul_to_stacked_matrix(const matrix
     return result;
 }
 
+matrix<CUDA> matrix<CUDA>::bcast_mat_mul_to_stacked_matrix(const matrix<CUDA> &a, const matrix<CUDA> &b)
+{
+    if(a.columns() != b.rows() || b.height() != 1)
+        throw std::runtime_error("bcast_mat_mul_to_stacked_matrix : matrix shapes do not match. a.columns() needs to be equal to b.rows()");
 
+    matrix<CUDA> result = create_stacked_matrix(b.rows(), a.columns(), a.height());
 
+    dim3 threads(16, 16);
+    dim3 blocks(
+        (result.rows() + 15) / 16,
+        (result.columns() + 15) / 16,
+        result.height()
+    );
 
+    matrix_kernel_bcast_mat_mul_to_stacked_matrix<<<blocks, threads>>>(a.data, b.data, result.data, result.r, result.c, b.columns());
+    return result;
 
-
+}
 
 matrix<CUDA> matrix<CUDA>::bcast_scale_to_stacked_matrix(const matrix<CUDA> &a, const matrix<CUDA> &b)
 {
@@ -456,6 +497,7 @@ void  matrix<CUDA>::print() const
     cudaMemcpy(arr.data(), this->data, sizeof(float) * n, cudaMemcpyDeviceToHost);
 
 
+
     for(int l = 0; l < this->h; l++)
     {
         std::cout << "----------- Matrix : " << l << " -----------" << std::endl;
@@ -581,10 +623,14 @@ matrix<CUDA>& matrix<CUDA>::operator=(matrix<CUDA>&& other) noexcept
 
 matrix<CUDA> matrix<CUDA>::operator%(const matrix<CUDA> &a) const
 {
-
-
-    if(this->r != a.rows() || this->c != a.columns())
+    if(this->r != a.rows() || this->c != a.columns() || (a.height() > 1 && this->h > 1 && a.height() != this->h) )
         throw std::runtime_error("% : matrix shapes need to be equal ");
+
+    if(this->h > 1 && a.height() == 1)
+        return bcast_hadamard_to_stacked_matrix(*this, a);
+
+    if(this->h == 1 && a.height() > 1)
+        return bcast_hadamard_to_stacked_matrix(a, *this);
 
     matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
@@ -595,8 +641,15 @@ matrix<CUDA> matrix<CUDA>::operator%(const matrix<CUDA> &a) const
 
 matrix<CUDA> matrix<CUDA>::operator+(const matrix<CUDA> &a) const
 {  
-    if(this->r != a.rows() || this->c != a.columns())
+
+    if(this->r != a.rows() || this->c != a.columns() || (a.height() > 1 && this->h > 1 && a.height() != this->h) )
         throw std::runtime_error("+ : matrix shapes need to be equal ");
+
+    if(this->h > 1 && a.height() == 1)
+        return bcast_add_to_stacked_matrix(*this, a);
+
+    if(this->h == 1 && a.height() > 1)
+        return bcast_add_to_stacked_matrix(a, *this);
 
     matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
@@ -617,8 +670,14 @@ matrix<CUDA> matrix<CUDA>::operator+(const float &a) const
 
 matrix<CUDA> matrix<CUDA>::operator-(const matrix<CUDA> &a) const
 {
-    if(this->r != a.rows() || this->c != a.columns())
+    if(this->r != a.rows() || this->c != a.columns() || (a.height() > 1 && this->h > 1 && a.height() != this->h) )
         throw std::runtime_error("- : matrix shapes need to be equal ");
+
+    if(this->h > 1 && a.height() == 1)
+        return bcast_add_to_stacked_matrix(*this, a * (-1));
+
+    if(this->h == 1 && a.height() > 1)
+        return bcast_add_to_stacked_matrix(a * (-1), *this);
 
     matrix<CUDA> res = *this;
     size_t blocks = (res.n + THREADS_1D - 1) / THREADS_1D;
@@ -646,12 +705,16 @@ matrix<CUDA> matrix<CUDA>::operator*(const float &a) const
 }
 
 matrix<CUDA> matrix<CUDA>::operator*(const matrix<CUDA> &a) const
-{
-    if(this->h != a.height())
-        throw std::runtime_error("mat_mul : matrices stacks arent equal in size. ");
-    
+{    
     if(this->c != a.rows())
         throw std::runtime_error("mat_mul : matrix shapes do not match. ");
+
+    if(this->h > 1 && a.height() == 1)
+        return bcast_mat_mul_to_stacked_matrix(*this, a);
+
+    if(this->h == 1 && a.height() > 1)
+        return bcast_reversed_mat_mul_to_stacked_matrix(a, *this);
+
 
     matrix<CUDA> result = create_stacked_matrix(this->r, a.columns(), this->h);
 

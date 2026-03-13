@@ -33,11 +33,19 @@ __global__ void matrix_kernel_add_value(const float *A, float *result, const flo
 
 __global__ void matrix_kernel_mat_mul(const float *A, const float *B, float *result, const size_t result_rows, const size_t result_cols, const size_t length);
 
+
+__global__ void matrix_kernel_reduce_sum(const float *A, float *result, const size_t mat_size, const size_t n);
+
 __global__ void matrix_kernel_bcast_add_to_stacked_matrix(const float* A, const float* B, float *result, const size_t mat_size, const size_t n);
+
 
 __global__ void matrix_kernel_bcast_reversed_mat_mul_to_stacked_matrix(const float *A, const float *B, float *result, const size_t result_rows, const size_t result_cols, const size_t length);
 
+__global__ void matrix_kernel_bcast_mat_mul_to_stacked_matrix(const float *A, const float *B, float *result, const size_t result_rows, const size_t result_cols, const size_t length);
+
 __global__ void matrix_kernel_bcast_scale_to_stacked_matrix(const float* A, const float* B, float *result, const size_t mat_size, const size_t n);
+
+__global__ void matrix_kernel_bcast_hadamard_to_stacked_matrix(const float* A, const float* B, float *result, const size_t mat_size, const size_t n);
 
 __global__ void matrix_kernel_transpose(const float* A, float* result, const size_t result_rows, const size_t result_columns, const size_t n);
 

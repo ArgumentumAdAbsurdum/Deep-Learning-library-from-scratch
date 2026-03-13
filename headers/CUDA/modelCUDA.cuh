@@ -14,8 +14,8 @@ class dataset<CUDA>
 {
 
 public:
-    std::vector<matrix<CUDA>> input;
-    std::vector<matrix<CUDA>> expected;
+    matrix<CUDA> input;
+    matrix<CUDA> expected;
     
     dataset();
     dataset(const std::string filename, size_t label_col = 0);

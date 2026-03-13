@@ -15,33 +15,68 @@ int main()
     // cmake .. -DENABLE_CUDA=ON 
     
     
+
+
+    
+    
     NeuralNetwork c;
 
     c.configure_input_layer(784);
-    c.add_layer(256, Activation::RELU);
-    c.add_layer(128, Activation::RELU);
-    c.add_layer(10, Activation::SOFTMAX);
+    c.add_layer(64, Activation::RELU);
+    c.add_layer(64, Activation::RELU);
+    c.add_layer(10,  Activation::SOFTMAX);
     c.configure_loss_function(Loss::CROSS_ENTROPY);
     
-    c.initalise_random_weights();
+    c.initalise_random_weights(0,0.1);
+
+
 
     
+    
+
     Dataset train = Dataset("../datasets/mnist_train.csv");
-    Dataset test = Dataset("../datasets/mnist_test.csv");
- 
-    train.normalize();          // 
-    test.normalize();
+    train.normalize();
+    train.one_hot_encode();     
 
-    train.one_hot_encode();     //
-    test.one_hot_encode();
+    //train.expected.slice_stacked_matrix(0,1).print();
     
+    //train.input.slice_stacked_matrix(0,1).print();
 
-    c.fit(1, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.001 , 1);
+    
+    c.fit(510, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.001 , 1024);
 
     c.performance(train);
-    c.performance(test);
 
     c.save_weights("test1.txt");
     
     
+    
+   
+    /*
+    Dataset ds;
+    ds.input = Matrix::create_stacked_matrix(1,1,1024, 1);
+    ds.expected = Matrix::create_stacked_matrix(1,1,1024, 1);
+
+    NeuralNetwork c;
+
+    c.configure_input_layer(1);
+    c.add_layer(1, Activation::IDENTITY);
+    c.configure_loss_function(Loss::QUADRATIC);
+    c.initalise_random_weights();
+    
+    c.fit(1000, ds, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.01, 1024);
+
+    c.run(ds.input).print();
+    */
+
+
+    
+
+    /*
+    Matrix a = Matrix::create_stacked_matrix(10,1, 1, 2);
+    Matrix b = Matrix::create_stacked_matrix(10,1, 1, 1);
+    a.print();
+    (activation<CUDA>::softmax(a)).print();
+    */
+
 }
