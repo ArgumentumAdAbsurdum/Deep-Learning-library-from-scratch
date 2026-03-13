@@ -1082,3 +1082,43 @@ events:
       
       
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "/usr/share/cmake-3.28/Modules/Internal/CheckSourceCompiles.cmake:101 (try_compile)"
+      - "/usr/share/cmake-3.28/Modules/CheckCXXSourceCompiles.cmake:52 (cmake_check_source_compiles)"
+      - "/usr/share/cmake-3.28/Modules/FindThreads.cmake:99 (CHECK_CXX_SOURCE_COMPILES)"
+      - "/usr/share/cmake-3.28/Modules/FindThreads.cmake:163 (_threads_check_libc)"
+      - "/usr/share/cmake-3.28/Modules/FindCUDAToolkit.cmake:1152 (find_package)"
+      - "CMakeLists.txt:67 (find_package)"
+    checks:
+      - "Performing Test CMAKE_HAVE_LIBC_PTHREAD"
+    directories:
+      source: "/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles/CMakeScratch/TryCompile-imi36z"
+      binary: "/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles/CMakeScratch/TryCompile-imi36z"
+    cmakeVariables:
+      CMAKE_CUDA_ARCHITECTURES: "native"
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+    buildResult:
+      variable: "CMAKE_HAVE_LIBC_PTHREAD"
+      cached: true
+      stdout: |
+        Change Dir: '/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles/CMakeScratch/TryCompile-imi36z'
+        
+        Run Build Command(s): /usr/bin/cmake -E env VERBOSE=1 /usr/bin/gmake -f Makefile cmTC_72cfe/fast
+        /usr/bin/gmake  -f CMakeFiles/cmTC_72cfe.dir/build.make CMakeFiles/cmTC_72cfe.dir/build
+        gmake[1]: Entering directory '/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles/CMakeScratch/TryCompile-imi36z'
+        Building CXX object CMakeFiles/cmTC_72cfe.dir/src.cxx.o
+        /usr/bin/c++ -DCMAKE_HAVE_LIBC_PTHREAD  -std=c++17 -o CMakeFiles/cmTC_72cfe.dir/src.cxx.o -c /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles/CMakeScratch/TryCompile-imi36z/src.cxx
+        Linking CXX executable cmTC_72cfe
+        /usr/bin/cmake -E cmake_link_script CMakeFiles/cmTC_72cfe.dir/link.txt --verbose=1
+        /usr/bin/c++ CMakeFiles/cmTC_72cfe.dir/src.cxx.o -o cmTC_72cfe 
+        gmake[1]: Leaving directory '/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles/CMakeScratch/TryCompile-imi36z'
+        
+      exitCode: 0
+...

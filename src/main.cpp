@@ -30,22 +30,24 @@ int main()
     c.initalise_random_weights(0,0.1);
 
 
-
-    
-    
-
     Dataset train = Dataset("../datasets/mnist_train.csv");
     train.normalize();
-    train.one_hot_encode();     
-
-    //train.expected.slice_stacked_matrix(0,1).print();
+    train.one_hot_encode();
     
-    //train.input.slice_stacked_matrix(0,1).print();
+    Dataset test = Dataset("../datasets/mnist_test.csv");
+    test.normalize();
+    test.one_hot_encode();     
 
-    
-    c.fit(510, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.001 , 1024);
+    //c.fit(200, train, Optimizer::MIN_BATCH_GRADIENT_DESCENT, 0.001 , 256);
+
+    ADAM_Optimizer adam;
+    adam.lr = 0.001;
+    adam.batch_size = 256;
+
+    c.fit(50, train, adam);
 
     c.performance(train);
+    c.performance(test);
 
     c.save_weights("test1.txt");
     

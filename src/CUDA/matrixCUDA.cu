@@ -12,7 +12,8 @@ matrix<CUDA>::matrix() : n(0), h(0), c(0), r(0), data(nullptr)
 
 matrix<CUDA>::matrix(const matrix<CUDA>& other) : r(other.r), c(other.c), n(other.n), h(other.h)
 {
-    cudaMalloc(&this->data, sizeof(float) * n);
+    //cudaMalloc(&this->data, sizeof(float) * n);
+    this->data = memory_pool<CUDA>::instance().malloc(n);
     cudaMemcpy(this->data, other.data, sizeof(float) * other.n, cudaMemcpyDeviceToDevice);
 }
 
@@ -28,7 +29,8 @@ matrix<CUDA>::matrix(matrix<CUDA>&& other) noexcept : n(other.n), r(other.r), c(
 matrix<CUDA>::matrix(const size_t rows, const size_t columns) : r(rows), c(columns), h(1)
 {
     this->n = r * c;
-    cudaMalloc(&this->data, sizeof(float) * n);
+    //cudaMalloc(&this->data, sizeof(float) * n);
+    this->data = memory_pool<CUDA>::instance().malloc(n);
 }
 
 matrix<CUDA>::matrix(const size_t rows, const size_t columns, const std::vector<float>& values) : matrix(rows, columns)
@@ -70,7 +72,7 @@ matrix<CUDA>::matrix(float *ptr, const size_t rows, const size_t columns, const 
 matrix<CUDA>::~matrix()
 {
     if(owns_memory)
-        cudaFree(this->data);
+        memory_pool<CUDA>::instance().demalloc(data, n);
 }
 
 
@@ -83,7 +85,7 @@ matrix<CUDA> matrix<CUDA>::create_stacked_matrix(const size_t rows, const size_t
     result.h = height;
     result.n = rows * columns * height;
 
-    cudaMalloc(&result.data, sizeof(float) * result.n);
+    result.data = memory_pool<CUDA>::instance().malloc(result.n);
     return result;
 }
 
@@ -139,16 +141,15 @@ matrix<CUDA> matrix<CUDA>::slice_stacked_matrix(size_t start, size_t end)
 
 matrix<CUDA> matrix<CUDA>::reduce_sum(const matrix<CUDA> &a)
 {
-    matrix<CUDA> result(a.rows(), a.columns(), 0);
-    size_t mat_size = a.mat_size();
-        
-    dim3 threads(256);
-    dim3 blocks(
-        (mat_size + 255) / 256,             
-        a.h
-    );
+    size_t threads = std::min((size_t)THREADS_1D, a.height());
 
-    matrix_kernel_reduce_sum<<<blocks, threads>>>(a.data, result.data, mat_size, a.size());
+    matrix<CUDA> result = create_stacked_matrix(a.rows(), a.columns(), 1);
+    size_t mat_size = a.mat_size();
+    size_t shared = THREADS_1D * sizeof(float);
+
+
+    matrix_kernel_reduce_sum<<<mat_size, threads, shared>>>(
+        a.data, result.data, mat_size, a.height());
     return result;
 }
 
@@ -521,8 +522,16 @@ void  matrix<CUDA>::print_size() const
 
 void  matrix<CUDA>::set(float val)
 {
-    std::vector<float> arr(n, val);
-    cudaMemcpy(this->data, arr.data(), sizeof(float) * n, cudaMemcpyHostToDevice);    
+
+    if(val == 0.0f)
+    {
+        cudaMemset(this->data, 0, n * sizeof(float));  
+        return;
+    }
+
+    size_t blocks = (this->n + THREADS_1D - 1) / THREADS_1D;
+
+    matrix_kernel_set<<<blocks, THREADS_1D>>>(this->data, val, this->n);
 }
 
 matrix<CUDA>  matrix<CUDA>::sqrt(const matrix<CUDA> &a)
@@ -768,4 +777,12 @@ matrix<CUDA> matrix<CUDA>::transpose(const matrix<CUDA> &a)
     matrix_kernel_transpose<<<blocks, 256>>>(a.data, result.data, result.rows(), result.columns(), result.size());
     return result;
 }
+
+
+
+
+
+
+
+
 

@@ -1,7 +1,6 @@
 #include "modelCUDA.cuh"
 #include <sstream>
-
-
+#include <iomanip>
 
 
 neuralnetwork<CUDA>::neuralnetwork() : input_layer_neurons(0), output_layer_neurons(0)
@@ -177,10 +176,8 @@ matrix<CUDA> neuralnetwork<CUDA>::run(const matrix<CUDA> &input)
     
     for(int i = 0; i < neurons_per_layer.size() - 1; i++)
     {
-
         matrix<CUDA> prod = weight_matrices[i] * result + bias_matrices[i];
-        result = afunc[i](prod);
-        
+        result = afunc[i](prod);   
     }
 
     return result;
@@ -196,7 +193,8 @@ std::vector<matrix<CUDA>> neuralnetwork<CUDA>::layer_outputs(const matrix<CUDA> 
     
     for(int i = 0; i < neurons_per_layer.size() - 1; i++)
     {
-        matrix<CUDA> prod = weight_matrices[i] * current + bias_matrices[i];
+        matrix<CUDA> prod = weight_matrices[i] * current;
+        prod += bias_matrices[i];
         current = afunc[i](prod);
         outputs[i+1] = current;
     }
@@ -207,6 +205,10 @@ std::vector<matrix<CUDA>> neuralnetwork<CUDA>::layer_outputs(const matrix<CUDA> 
 void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds, double lr , double lambda, size_t batch_size)
 {
 
+
+    std::cout << "==================[TRAINING]=====================" << std::endl;
+
+    size_t current_epoch = 0;
     std::vector<matrix<CUDA>> wgradients;
     wgradients.resize(weight_matrices.size());
 
@@ -226,25 +228,29 @@ void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds
     for(size_t step = 0; step < steps; step++)
     {
 
-        std::cout << "step : " << step << std::endl;
+        if(step % (ds.input.height() / batch_size) == 0 )
+        {
+            current_epoch++;
+            float percentage = (float)step / (float)steps;
+            std::cout << "\r[Epoch : " << current_epoch << " , " << std::fixed << std::setprecision(2) << percentage << " finished ]"  << std::flush;
+        }
+
 
         for(size_t i = 0; i < weight_matrices.size(); i++)
         {
             wgradients[i].set(0);
             bgradients[i].set(0);
         }
-    
-        
+
         size_t batchidx = dist(rng);
         size_t start = batchidx * batch_size;
         size_t end   = std::min(start + batch_size, ds.input.height());
-        
+
         std::vector<matrix<CUDA>> Z;
         Z.reserve(this->weight_matrices.size() + 1);
  
         matrix<CUDA> input = ds.input.slice_stacked_matrix(start, end); 
         matrix<CUDA> truth = ds.expected.slice_stacked_matrix(start, end); 
-
 
         Z = layer_outputs(input);
         ssize_t index = Z.size() - 1;
@@ -253,16 +259,6 @@ void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds
 
         wgradients[index-1] = delta * matrix<CUDA>::transpose(Z[index-1]);
         bgradients[index-1] = delta;
-
-
-        //Z[index].print();
-    
-        //lfunc_dx(Z[index], truth).print();
-
-
-        
-
-
 
         index-= 2;
         for(; index >= 0; index--)                  
@@ -275,8 +271,6 @@ void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds
             bgradients[index] = delta;
         }
          
-
-
 
         const float n = (float) batch_size;
         if(lambda != 0.0f)
@@ -295,13 +289,12 @@ void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds
                 bias_matrices[i] -=  (lr / n) * matrix<CUDA>::reduce_sum(bgradients[i]);
             }
         }
-
     }
 
 
+    std::cout << std::endl;
 
-
-
+    std::cout << "=================================================" << std::endl;
 }
 
 
@@ -311,53 +304,7 @@ void neuralnetwork<CUDA>::gradient_descent(const size_t steps, dataset<CUDA>& ds
 
 // ------------------------------------------------------------------------------------
 
-void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA>& ds, optimizer_type ofunc, double lr, size_t batch_size )
-{
 
-    size_t steps;
-
-    switch(ofunc)
-    {
-        case optimizer<CUDA>::STOCHASTIC_GRADIENT_DESCENT:
-            steps = epochs * ds.input.height(); 
-            gradient_descent(steps, ds, lr, 0.0f, 1);
-            break;
-
-        case optimizer<CUDA>::BATCH_GRADIENT_DESCENT:
-            steps = epochs;
-            gradient_descent(steps, ds, lr, 0.0f, ds.input.height());
-            break;
-
-        case optimizer<CUDA>::MIN_BATCH_GRADIENT_DESCENT:
-            steps = epochs * (ds.input.height() / batch_size);
-            gradient_descent(steps, ds, lr, 0.0f, batch_size);
-            break;
-    }
-}
-
-
-void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, optimizer_type ofunc, hyperparameter<CUDA>& param)
-{
-
-    size_t steps;
-    switch(ofunc)
-    {
-        case optimizer<CUDA>::STOCHASTIC_GRADIENT_DESCENT:
-            steps = epochs * ds.input.size(); 
-            gradient_descent(steps, ds, param.lr, param.lambda, 1);
-            break;
-
-        case optimizer<CUDA>::BATCH_GRADIENT_DESCENT:
-            steps = epochs;
-            gradient_descent(steps, ds, param.lr, param.lambda, ds.input.size());
-            break;
-
-        case optimizer<CUDA>::MIN_BATCH_GRADIENT_DESCENT:
-            steps = epochs * (ds.input.size() / param.batch_size);
-            gradient_descent(steps, ds, param.lr, param.lambda, param.batch_size);
-            break;
-    }
-}
 
 
 void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, adam_optimizer<CUDA> &adam)
@@ -487,12 +434,156 @@ void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, adam_optim
 
     }
     */
+
+
+    std::cout << "==================[TRAINING]=====================" << std::endl;
+    const size_t steps = epochs * (ds.input.height() / adam.batch_size);
+    size_t current_epoch = 0;
+
+    std::vector<matrix<CUDA>> weight_gradients;
+    weight_gradients.resize(weight_matrices.size());
+
+    std::vector<matrix<CUDA>> bias_gradients;
+    bias_gradients.resize(bias_matrices.size());
+
+
+    std::vector<matrix<CUDA>> weight_momentum;
+    weight_momentum.resize(weight_matrices.size());
+
+    std::vector<matrix<CUDA>> bias_momentum;
+    bias_momentum.resize(weight_matrices.size());
+
+    std::vector<matrix<CUDA>> weight_variance;
+    weight_variance.resize(weight_matrices.size());
+        
+    std::vector<matrix<CUDA>> bias_variance;
+    bias_variance.resize(weight_matrices.size());
+
+
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist(0, ds.input.height() / adam.batch_size - 1); 
+
+
+    for(size_t i = 0; i < weight_matrices.size(); i++)
+    {
+        weight_gradients[i] = matrix<CUDA>::create_stacked_matrix(weight_matrices[i].rows(), weight_matrices[i].columns(), adam.batch_size, 0.0f);
+        bias_gradients[i] = matrix<CUDA>::create_stacked_matrix(bias_matrices[i].rows(), 1, adam.batch_size, 0.0f);
+
+        weight_momentum[i] = matrix<CUDA>(weight_matrices[i].rows(), weight_matrices[i].columns(), 0);
+        weight_variance[i] = matrix<CUDA>(weight_matrices[i].rows(), weight_matrices[i].columns(), 0);
+
+        bias_momentum[i] = matrix<CUDA>(bias_matrices[i].rows(), 1, 0);
+        bias_variance[i] = matrix<CUDA>(bias_matrices[i].rows(), 1, 0);
+    }
+
+
+    for(size_t step = 1; step <= steps; step++)
+    {
+        
+        if(step % (ds.input.height() / adam.batch_size) == 0 )
+        {
+            current_epoch++;
+            float percentage = (float)step / (float)steps;
+            std::cout << "\r[Epoch : " << current_epoch << " , " << std::fixed << std::setprecision(2) << percentage * 100 << " % finished ]"  << std::flush;
+        }
+
+        
+
+        for(size_t i = 0; i < weight_matrices.size(); i++)
+        {
+            weight_gradients[i].set(0);
+            bias_gradients[i].set(0);
+        }
+
+
+
+        size_t batchidx = dist(rng);
+        size_t start = batchidx * adam.batch_size;
+        size_t end   = std::min(start + adam.batch_size, ds.input.height());
+
+ 
+        matrix<CUDA> input = ds.input.slice_stacked_matrix(start, end); 
+        matrix<CUDA> truth = ds.expected.slice_stacked_matrix(start, end); 
+
+        std::vector<matrix<CUDA>> Z;
+        Z.reserve(this->weight_matrices.size() + 1);
+        Z = layer_outputs(input);
+        
+        ssize_t index = Z.size() - 1;
+        
+
+        matrix<CUDA> delta = lfunc_dx(Z[index], truth) % afunc_dx[index-1](weight_matrices[index-1] * Z[index-1] + bias_matrices[index-1]);
+        
+
+
+        weight_gradients[index-1] = delta * matrix<CUDA>::transpose(Z[index-1]);
+        bias_gradients[index-1] = delta;
+
+
+        index-= 2;
+        for(; index >= 0; index--)                  
+        {    
+            matrix<CUDA> weight_transposed = matrix<CUDA>::transpose(weight_matrices[index+1]);
+        
+            delta = (weight_transposed * delta) % afunc_dx[index](weight_matrices[index] * Z[index] + bias_matrices[index]);
+                
+            weight_gradients[index] = delta * matrix<CUDA>::transpose(Z[index]);
+            bias_gradients[index] = delta;
+        }
+
+
+        const float n = (float) adam.batch_size;
+        for(size_t i = 0; i < weight_matrices.size(); i++)
+        {
+
+            weight_gradients[i] = weight_gradients[i] * (1 / n);
+            bias_gradients[i] = bias_gradients[i] * (1 / n);
+
+            
+
+            matrix<CUDA> weight_gradients_reduced = matrix<CUDA>::reduce_sum(weight_gradients[i]);
+
+            weight_momentum[i] = adam.beta1 * weight_momentum[i] + (1 - adam.beta1) * weight_gradients_reduced;
+            weight_variance[i] = adam.beta2 * weight_variance[i] + (1 - adam.beta2) * matrix<CUDA>::square(weight_gradients_reduced);
+            
+            matrix<CUDA> weight_momentum_comp = weight_momentum[i] * (1 / (1-std::pow(adam.beta1, step))); 
+            matrix<CUDA> weight_variance_comp = weight_variance[i] * (1 / (1-std::pow(adam.beta2, step))); 
+
+            weight_matrices[i] -= adam.lr * (weight_momentum_comp  % matrix<CUDA>::reciprocal(matrix<CUDA>::sqrt(weight_variance_comp) + adam.epsilon)); 
+
+
+
+
+            matrix<CUDA> bias_gradients_reduced = matrix<CUDA>::reduce_sum(bias_gradients[i]);
+
+            bias_momentum[i] = adam.beta1 * bias_momentum[i] + (1 - adam.beta1) * bias_gradients_reduced;
+            bias_variance[i] = adam.beta2 * bias_variance[i] + (1 - adam.beta2) * matrix<CUDA>::square(bias_gradients_reduced);
+
+            matrix<CUDA> bias_momentum_comp = bias_momentum[i] * (1 / (1-std::pow(adam.beta1, step))); 
+            matrix<CUDA> bias_variance_comp = bias_variance[i] * (1 / (1-std::pow(adam.beta2, step))); 
+
+            bias_matrices[i] -= adam.lr * bias_momentum_comp  % matrix<CUDA>::reciprocal(matrix<CUDA>::sqrt(bias_variance_comp) + adam.epsilon);
+
+
+            // AdamW enabled :
+            if(adam.lambda != 0)
+            {
+                weight_matrices[i] -= weight_matrices[i] *  adam.lr * adam.lambda;
+                bias_matrices[i] -= bias_matrices[i] * adam.lr * adam.lambda;
+            }
+        }
+
+    }
+
+    std::cout << "=================================================" << std::endl;
+
 }
 
 void neuralnetwork<CUDA>::performance(dataset<CUDA> &ds, std::string name)
 {
-   
-    float accuracy = 0;
+    
+    float accuracy = 0; 
 
     std::vector<size_t> p = run(ds.input).argmax();
     std::vector<size_t> e = ds.expected.argmax();
@@ -509,6 +600,55 @@ void neuralnetwork<CUDA>::performance(dataset<CUDA> &ds, std::string name)
     std::cout << "[PERFORMANCE RESULTS FOR DATASET : " << name << "]" << std::endl;
     std::cout << "[ => Accuracy : " << accuracy << "]" <<  std::endl;
 
+}
+
+
+void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA>& ds, optimizer_type ofunc, double lr, size_t batch_size )
+{
+
+    size_t steps;
+
+    switch(ofunc)
+    {
+        case optimizer<CUDA>::STOCHASTIC_GRADIENT_DESCENT:
+            steps = epochs * ds.input.height(); 
+            gradient_descent(steps, ds, lr, 0.0f, 1);
+            break;
+
+        case optimizer<CUDA>::BATCH_GRADIENT_DESCENT:
+            steps = epochs;
+            gradient_descent(steps, ds, lr, 0.0f, ds.input.height());
+            break;
+
+        case optimizer<CUDA>::MIN_BATCH_GRADIENT_DESCENT:
+            steps = epochs * (ds.input.height() / batch_size);
+            gradient_descent(steps, ds, lr, 0.0f, batch_size);
+            break;
+    }
+}
+
+
+void neuralnetwork<CUDA>::fit(const size_t epochs, dataset<CUDA> &ds, optimizer_type ofunc, hyperparameter<CUDA>& param)
+{
+
+    size_t steps;
+    switch(ofunc)
+    {
+        case optimizer<CUDA>::STOCHASTIC_GRADIENT_DESCENT:
+            steps = epochs * ds.input.height(); 
+            gradient_descent(steps, ds, param.lr, param.lambda, 1);
+            break;
+
+        case optimizer<CUDA>::BATCH_GRADIENT_DESCENT:
+            steps = epochs;
+            gradient_descent(steps, ds, param.lr, param.lambda, ds.input.height());
+            break;
+
+        case optimizer<CUDA>::MIN_BATCH_GRADIENT_DESCENT:
+            steps = epochs * (ds.input.height() / param.batch_size);
+            gradient_descent(steps, ds, param.lr, param.lambda, param.batch_size);
+            break;
+    }
 }
 
 void neuralnetwork<CUDA>::performance(dataset<CUDA> &ds)

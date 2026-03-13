@@ -26,6 +26,7 @@ if(ENABLE_CUDA)
         src/CUDA/matrixCUDA.cu
         src/CUDA/activationCUDA.cu
         src/CUDA/neuralnetworkCUDA.cu
+        src/CUDA/memory_poolCUDA.cu
     )
 else()
     include_directories(headers/CPU)
@@ -62,7 +63,7 @@ if (NOT ENABLE_CUDA AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 
-if(CUDA_ENABLED)
+if(ENABLE_CUDA)
 
     find_package(CUDAToolkit REQUIRED)
     target_link_libraries(DEEPLEARNINGLIBARY PRIVATE 

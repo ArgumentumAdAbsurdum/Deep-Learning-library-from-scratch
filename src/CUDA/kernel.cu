@@ -154,6 +154,18 @@ __global__ void matrix_kernel_min(const float *data, float *result, const size_t
 
 }
 
+
+
+__global__ void matrix_kernel_set(float* data, float val, size_t n)
+{
+    size_t i = threadIdx.x + blockIdx.x * blockDim.x;
+    size_t stride = gridDim.x * blockDim.x;
+    
+    for(; i < n; i += stride)
+        data[i] = val;
+
+}
+
 __global__ void matrix_kernel_sqrt(const float* data, float* result, size_t n)
 {
     size_t i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -268,16 +280,31 @@ __global__ void matrix_kernel_mat_mul(const float *A, const float *B, float *res
     result[offset_result + row * result_cols + column] = sum;
 }
 
-
-__global__ void matrix_kernel_reduce_sum(const float *A, float *result, const size_t mat_size, const size_t n)
+__global__ void matrix_kernel_reduce_sum(const float *A, float *result, const size_t mat_size, const size_t height)
 {
-    size_t i = blockIdx.x * blockDim.x + threadIdx.x;
-    size_t offset = blockIdx.y * mat_size;
+    extern __shared__ float shared_data[];
+    size_t index = blockIdx.x;
+    size_t threadid = threadIdx.x;
 
-    if(i >= mat_size || offset + i >= n)
-        return;
+    float sum = 0.0f;
+    for(size_t layer = threadid; layer < height; layer += blockDim.x)
+        sum += A[layer * mat_size + index];
 
-    atomicAdd(&result[i], A[offset + i]);
+    shared_data[threadid] = sum;
+    __syncthreads();
+
+
+    for(size_t stride = blockDim.x / 2;  stride > 0; stride /= 2)
+    {
+        if(threadid < stride)
+        {
+            shared_data[threadid] += shared_data[threadid + stride];
+        }
+        __syncthreads();
+    }
+
+    if(threadid == 0)
+        result[index] = shared_data[0];
 }
 
 __global__ void matrix_kernel_bcast_add_to_stacked_matrix(const float *A, const float *B, float *result, const size_t mat_size, const size_t n)

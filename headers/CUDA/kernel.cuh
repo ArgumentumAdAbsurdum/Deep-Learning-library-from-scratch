@@ -11,6 +11,9 @@ __global__ void matrix_kernel_max(const float* data, float* result, const size_t
 
 __global__ void matrix_kernel_min(const float* data, float* result, const size_t mat_size);
 
+
+__global__ void matrix_kernel_set(float* data, float val, size_t n);
+
 __global__ void matrix_kernel_sqrt(const float* data, float* result, size_t n);
 
 __global__ void matrix_kernel_square(const float* data, float* result, size_t n);

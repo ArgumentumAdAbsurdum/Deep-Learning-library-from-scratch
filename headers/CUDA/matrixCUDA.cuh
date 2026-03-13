@@ -113,40 +113,13 @@ matrix<CUDA> operator-(float val, const matrix<CUDA>& a);
 template<>
 class memory_pool<CUDA>
 {
+private:
+
     std::unordered_map<size_t, std::vector<float*>> free_blocks;
 
 public:
-    static memory_pool<CUDA>& instance()
-    {
-        static memory_pool<CUDA> pool;
-        return pool;
-    }
-
-    float* malloc(size_t n)
-    {
-        auto& blocks = free_blocks[n];
-        if(!blocks.empty())
-        {
-            float* ptr = blocks.back();
-            blocks.pop_back();
-            return ptr;
-        }
-        float *ptr;
-        cudaMalloc(&ptr, n * sizeof(float));
-        return ptr;
-    }
-
-    void demalloc(float* ptr, size_t n) 
-    {
-        if(ptr == nullptr) return;
-        free_blocks[n].push_back(ptr);
-    }
-
-    ~memory_pool<CUDA>() 
-    {
-        for (auto& [size, blocks] : free_blocks)
-            for (float* ptr : blocks)
-                cudaFree(ptr);
-    }
-
+    static memory_pool<CUDA>& instance();
+    float* malloc(size_t n);
+    void demalloc(float* ptr, size_t n);
+    ~memory_pool<CUDA>();
 };
