@@ -130,6 +130,45 @@ DeepModel/fast:
 .PHONY : DeepModel/fast
 
 #=============================================================================
+# Target rules for targets named fashion_mnist
+
+# Build rule for target.
+fashion_mnist: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 fashion_mnist
+.PHONY : fashion_mnist
+
+# fast build rule for target.
+fashion_mnist/fast:
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/fashion_mnist.dir/build.make examples/CMakeFiles/fashion_mnist.dir/build
+.PHONY : fashion_mnist/fast
+
+#=============================================================================
+# Target rules for targets named mnist
+
+# Build rule for target.
+mnist: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 mnist
+.PHONY : mnist
+
+# fast build rule for target.
+mnist/fast:
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/mnist.dir/build.make examples/CMakeFiles/mnist.dir/build
+.PHONY : mnist/fast
+
+#=============================================================================
+# Target rules for targets named linear_algebra
+
+# Build rule for target.
+linear_algebra: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 linear_algebra
+.PHONY : linear_algebra
+
+# fast build rule for target.
+linear_algebra/fast:
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/linear_algebra.dir/build.make examples/CMakeFiles/linear_algebra.dir/build
+.PHONY : linear_algebra/fast
+
+#=============================================================================
 # Target rules for targets named deepmodel_benchmark
 
 # Build rule for target.
@@ -152,6 +191,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... DeepModel"
 	@echo "... deepmodel_benchmark"
+	@echo "... fashion_mnist"
+	@echo "... linear_algebra"
+	@echo "... mnist"
 .PHONY : help
 
 

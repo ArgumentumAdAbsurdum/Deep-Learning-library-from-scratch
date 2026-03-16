@@ -64,16 +64,19 @@ CMAKE_BINARY_DIR = /home/lucbr/Documents/DeepLearningLibary/build
 
 # The main recursive "all" target.
 all: src/all
+all: examples/all
 all: benchmark/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
 preinstall: src/preinstall
+preinstall: examples/preinstall
 preinstall: benchmark/preinstall
 .PHONY : preinstall
 
 # The main recursive "clean" target.
 clean: src/clean
+clean: examples/clean
 clean: benchmark/clean
 .PHONY : clean
 
@@ -91,6 +94,25 @@ benchmark/preinstall:
 # Recursive "clean" directory target.
 benchmark/clean: benchmark/CMakeFiles/deepmodel_benchmark.dir/clean
 .PHONY : benchmark/clean
+
+#=============================================================================
+# Directory level rules for directory examples
+
+# Recursive "all" directory target.
+examples/all: examples/CMakeFiles/fashion_mnist.dir/all
+examples/all: examples/CMakeFiles/mnist.dir/all
+examples/all: examples/CMakeFiles/linear_algebra.dir/all
+.PHONY : examples/all
+
+# Recursive "preinstall" directory target.
+examples/preinstall:
+.PHONY : examples/preinstall
+
+# Recursive "clean" directory target.
+examples/clean: examples/CMakeFiles/fashion_mnist.dir/clean
+examples/clean: examples/CMakeFiles/mnist.dir/clean
+examples/clean: examples/CMakeFiles/linear_algebra.dir/clean
+.PHONY : examples/clean
 
 #=============================================================================
 # Directory level rules for directory src
@@ -132,6 +154,84 @@ DeepModel: src/CMakeFiles/DeepModel.dir/rule
 src/CMakeFiles/DeepModel.dir/clean:
 	$(MAKE) $(MAKESILENT) -f src/CMakeFiles/DeepModel.dir/build.make src/CMakeFiles/DeepModel.dir/clean
 .PHONY : src/CMakeFiles/DeepModel.dir/clean
+
+#=============================================================================
+# Target rules for target examples/CMakeFiles/fashion_mnist.dir
+
+# All Build rule for target.
+examples/CMakeFiles/fashion_mnist.dir/all: src/CMakeFiles/DeepModel.dir/all
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/fashion_mnist.dir/build.make examples/CMakeFiles/fashion_mnist.dir/depend
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/fashion_mnist.dir/build.make examples/CMakeFiles/fashion_mnist.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles --progress-num=10,11 "Built target fashion_mnist"
+.PHONY : examples/CMakeFiles/fashion_mnist.dir/all
+
+# Build rule for subdir invocation for target.
+examples/CMakeFiles/fashion_mnist.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles 9
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 examples/CMakeFiles/fashion_mnist.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles 0
+.PHONY : examples/CMakeFiles/fashion_mnist.dir/rule
+
+# Convenience name for target.
+fashion_mnist: examples/CMakeFiles/fashion_mnist.dir/rule
+.PHONY : fashion_mnist
+
+# clean rule for target.
+examples/CMakeFiles/fashion_mnist.dir/clean:
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/fashion_mnist.dir/build.make examples/CMakeFiles/fashion_mnist.dir/clean
+.PHONY : examples/CMakeFiles/fashion_mnist.dir/clean
+
+#=============================================================================
+# Target rules for target examples/CMakeFiles/mnist.dir
+
+# All Build rule for target.
+examples/CMakeFiles/mnist.dir/all: src/CMakeFiles/DeepModel.dir/all
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/mnist.dir/build.make examples/CMakeFiles/mnist.dir/depend
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/mnist.dir/build.make examples/CMakeFiles/mnist.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles --progress-num=14,15 "Built target mnist"
+.PHONY : examples/CMakeFiles/mnist.dir/all
+
+# Build rule for subdir invocation for target.
+examples/CMakeFiles/mnist.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles 9
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 examples/CMakeFiles/mnist.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles 0
+.PHONY : examples/CMakeFiles/mnist.dir/rule
+
+# Convenience name for target.
+mnist: examples/CMakeFiles/mnist.dir/rule
+.PHONY : mnist
+
+# clean rule for target.
+examples/CMakeFiles/mnist.dir/clean:
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/mnist.dir/build.make examples/CMakeFiles/mnist.dir/clean
+.PHONY : examples/CMakeFiles/mnist.dir/clean
+
+#=============================================================================
+# Target rules for target examples/CMakeFiles/linear_algebra.dir
+
+# All Build rule for target.
+examples/CMakeFiles/linear_algebra.dir/all: src/CMakeFiles/DeepModel.dir/all
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/linear_algebra.dir/build.make examples/CMakeFiles/linear_algebra.dir/depend
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/linear_algebra.dir/build.make examples/CMakeFiles/linear_algebra.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=/home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles --progress-num=12,13 "Built target linear_algebra"
+.PHONY : examples/CMakeFiles/linear_algebra.dir/all
+
+# Build rule for subdir invocation for target.
+examples/CMakeFiles/linear_algebra.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles 9
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/Makefile2 examples/CMakeFiles/linear_algebra.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/lucbr/Documents/DeepLearningLibary/build/CMakeFiles 0
+.PHONY : examples/CMakeFiles/linear_algebra.dir/rule
+
+# Convenience name for target.
+linear_algebra: examples/CMakeFiles/linear_algebra.dir/rule
+.PHONY : linear_algebra
+
+# clean rule for target.
+examples/CMakeFiles/linear_algebra.dir/clean:
+	$(MAKE) $(MAKESILENT) -f examples/CMakeFiles/linear_algebra.dir/build.make examples/CMakeFiles/linear_algebra.dir/clean
+.PHONY : examples/CMakeFiles/linear_algebra.dir/clean
 
 #=============================================================================
 # Target rules for target benchmark/CMakeFiles/deepmodel_benchmark.dir

@@ -3,6 +3,11 @@
 /home/lucbr/Documents/DeepLearningLibary/build/src/CMakeFiles/DeepModel.dir
 /home/lucbr/Documents/DeepLearningLibary/build/src/CMakeFiles/edit_cache.dir
 /home/lucbr/Documents/DeepLearningLibary/build/src/CMakeFiles/rebuild_cache.dir
+/home/lucbr/Documents/DeepLearningLibary/build/examples/CMakeFiles/fashion_mnist.dir
+/home/lucbr/Documents/DeepLearningLibary/build/examples/CMakeFiles/mnist.dir
+/home/lucbr/Documents/DeepLearningLibary/build/examples/CMakeFiles/linear_algebra.dir
+/home/lucbr/Documents/DeepLearningLibary/build/examples/CMakeFiles/edit_cache.dir
+/home/lucbr/Documents/DeepLearningLibary/build/examples/CMakeFiles/rebuild_cache.dir
 /home/lucbr/Documents/DeepLearningLibary/build/benchmark/CMakeFiles/deepmodel_benchmark.dir
 /home/lucbr/Documents/DeepLearningLibary/build/benchmark/CMakeFiles/edit_cache.dir
 /home/lucbr/Documents/DeepLearningLibary/build/benchmark/CMakeFiles/rebuild_cache.dir

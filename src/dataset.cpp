@@ -9,11 +9,13 @@
 
 Dataset::Dataset()
 {
-    
+
 }
 
-Dataset::Dataset(const std::string filename, size_t output_col)
+Dataset::Dataset(const std::string filename, size_t output_col) : Dataset()
 {
+
+
     std::ifstream file(filename); 
     if (!file.is_open()) 
         throw std::runtime_error("Dataset : Cannot open CSV file: " + filename); 
@@ -142,10 +144,12 @@ Dataset::Dataset(const std::string filename, const std::vector<size_t>& ignore, 
     
 }
 
-Dataset Dataset::split(float ratio)
+std::pair<Dataset, Dataset> Dataset::split(float ratio)
 {
     size_t pivot = ratio * this->input.height();
     
+
+
     Dataset first;
     first.input = this->input.slice_stacked_matrix(0, pivot);
     first.expected = this->expected.slice_stacked_matrix(0, pivot);
@@ -154,8 +158,7 @@ Dataset Dataset::split(float ratio)
     second.input = this->input.slice_stacked_matrix(pivot, this->input.height());
     second.expected = this->expected.slice_stacked_matrix(pivot, this->input.height());
 
-    *this = first;
-    return second;
+    return {first, second};
 }
 
 void Dataset::one_hot_encode()

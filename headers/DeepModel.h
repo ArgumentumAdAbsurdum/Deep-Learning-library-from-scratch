@@ -19,7 +19,7 @@ public:
     Dataset(const std::string filename, size_t label_col = 0);
     Dataset(const std::string filename, const std::vector<size_t>& ignore, size_t label_col = 0);
 
-    Dataset split(float ratio);
+    std::pair<Dataset, Dataset> split(float ratio);
 
 
     void one_hot_encode();   

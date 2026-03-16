@@ -12,6 +12,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.28.3/CMakeCUDACompiler.cmake"
   "CMakeFiles/3.28.3/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.28.3/CMakeSystem.cmake"
+  "/home/lucbr/Documents/DeepLearningLibary/examples/CMakeLists.txt"
   "/home/lucbr/Documents/DeepLearningLibary/src/CMakeLists.txt"
   "/usr/share/cmake-3.28/Modules/CMakeCUDAInformation.cmake"
   "/usr/share/cmake-3.28/Modules/CMakeCXXInformation.cmake"
@@ -51,11 +52,15 @@ set(CMAKE_MAKEFILE_OUTPUTS
 set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   "src/CMakeFiles/CMakeDirectoryInformation.cmake"
+  "examples/CMakeFiles/CMakeDirectoryInformation.cmake"
   "benchmark/CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "src/CMakeFiles/DeepModel.dir/DependInfo.cmake"
+  "examples/CMakeFiles/fashion_mnist.dir/DependInfo.cmake"
+  "examples/CMakeFiles/mnist.dir/DependInfo.cmake"
+  "examples/CMakeFiles/linear_algebra.dir/DependInfo.cmake"
   "benchmark/CMakeFiles/deepmodel_benchmark.dir/DependInfo.cmake"
   )
