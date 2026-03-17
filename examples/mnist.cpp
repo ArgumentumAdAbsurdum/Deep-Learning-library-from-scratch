@@ -21,7 +21,8 @@ int main()
 
     if(!std::filesystem::exists(path))
     {
-        std::cerr << "Error : Dataset not found at: " << path << " , please edit path or download & place the mnist_train.csv inside /datasets." << std::endl; 
+        std::cerr << "Error : Dataset not found at: " << path << " , please edit path or download & place the mnist_train.csv inside /datasets." << std::endl;
+        return 1; 
     }
 
     // Load dataset and edit it
