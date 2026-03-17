@@ -53,7 +53,7 @@ def benchmark(batch_size, epochs):
         output = model(test_x)
         predicted = torch.argmax(output, dim = 1)
         accuracy = (predicted == test_y).float().mean()
-        print(f"accuracy : {accuracy:.2f}]")
+        print(f"accuracy : {(accuracy * 100 ):.3f}]")
 
 
 
