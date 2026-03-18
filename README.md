@@ -149,14 +149,16 @@ int main()
 
 All configurations were run on a mnist Dataset with 60k samples.
 
-#### Architecture:
+#### Network Architecture:
 Neurons                 : 784 x 128 x 128 x 10
 
 Activation functions    : RELU RELU SOFTMAX
 
 Loss function           : Cross entropy
 
-**Screenshots of the results below are inside benchmarks/result_screenshots*
+**Screenshots of the results really happening are inside benchmarks/result_screenshots**
+You can also run them yourself. Everything is included in /benchmarks.
+
 ### Mini-Batch SGD 
  
 | Batch Size | Epochs | DeepModel (CPU) | DeepModel (CUDA) | PyTorch (CPU) |
@@ -172,7 +174,7 @@ Loss function           : Cross entropy
 
 ### Mini-Batch ADAM + L2 Regularization
 
-> β₁ = 0.9 · β₂ = 0.999 · ε = 10e-8 · λ = 10e-3
+> β₁ = 0.9 · β₂ = 0.999 · ε = 10e-8 · λ = 10e-4
 
 | Batch Size | Epochs | DeepModel (CPU) | DeepModel (CUDA) | PyTorch (CPU) |
 |:----------:|:------:|-----------------:|------------------:|--------------:|
@@ -186,8 +188,32 @@ Loss function           : Cross entropy
 
 ### Interpretation of results
 
+DeepModel is both on CPU and CUDA faster than Pytorch on CPU, but has in both cases less accuracy.
+If we look at pytorch_benchmark.py we can see the reason for the longer times quickly:
 
-### Run the DeepModel benchmark
+```python3
+    for epoch in range(epochs):
+        for i in range(0, len(train_x), batch_size):
+            batch_x = train_x[i : i + batch_size]
+            batch_y = train_y[i : i + batch_size]
+```
+
+Pytorch generates a lot of overhead
+
+
+
+### Run the benchmark for yourself
+
+
+#### DeepModel : CPU-only
+
+```bash
+cmake -B build -DENABLE_CUDA=OFF -DBUILD_BENCHMARK=ON
+make --build build
+./build/benchmark/deepmodel_benchmark
+```
+
+#### DeepModel : CUDA Support
 
 ```bash
 cmake -B build -DENABLE_CUDA=ON -DBUILD_BENCHMARK=ON
@@ -195,17 +221,47 @@ make --build build
 ./build/benchmark/deepmodel_benchmark
 ```
 
-### Run the pytorch benchmark
+
+#### Pytorch : CPU-only 
 
 ```bash
 python3 benchmark/pytorch_benchmark.py
 ```
 **Requirements** pandas & pytorch
 
+---
 
 
+## Examples
 
+### Build
 
+#### CPU-only
 
+```bash
+cmake -B build -DENABLE_CUDA=OFF -DBUILD_EXAMPLES=ON
+cmake --build build
+```
+
+#### CPU-only
+
+```bash
 cmake -B build -DENABLE_CUDA=ON -DBUILD_EXAMPLES=ON
-cmake --build build --target mnist_example
+cmake --build build
+```
+
+
+
+### run:
+
+```bash
+./build/mnist
+./build/fashion_mnist
+./build/linear_algebra
+```
+
+
+
+
+
+

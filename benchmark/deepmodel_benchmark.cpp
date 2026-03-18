@@ -42,7 +42,7 @@ void benchmark_adam(const size_t batch_size, const size_t epochs, NeuralNetwork 
 
 int main()
 {
-
+    omp_set_num_threads(8);
     Dataset data = Dataset(path);
     
     data.normalize();

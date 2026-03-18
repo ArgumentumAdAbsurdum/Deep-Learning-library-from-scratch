@@ -1,7 +1,22 @@
 import torch
+import numpy as np
+import random
 import torch.nn as nn
 import pandas as pd
 import time
+
+
+torch.set_num_threads(8)
+torch.set_num_interop_threads(1)
+
+seed = 128
+torch.manual_seed(seed)
+np.random.seed(seed)
+random.seed(seed)
+
+torch.use_deterministic_algorithms(True)
+
+
 
 
 df = pd.read_csv("datasets/mnist_train.csv", header = None)
@@ -21,8 +36,8 @@ test_y = y[train_size:]
 
 
 
-def benchmark(batch_size, epochs):
-
+def create_model():
+    
     model = nn.Sequential(
     nn.Linear(784, 128),
     nn.ReLU(),
@@ -31,14 +46,32 @@ def benchmark(batch_size, epochs):
     nn.Linear(128, 10),
     )
 
+    return model
+
+
+
+def benchmark(batch_size, epochs):
+
+    model = create_model()
+
     sgd = torch.optim.SGD(model.parameters(), lr=0.001)
     loss_fn = nn.CrossEntropyLoss()
     
     start = time.time()
+
     for epoch in range(epochs):
+
+        g = torch.Generator()
+        g.manual_seed(seed + epoch)
+        perm = torch.randperm(len(train_x), generator=g)
+
+        shuffled_x = train_x[perm]
+        shuffled_y = train_y[perm]
+
+
         for i in range(0, len(train_x), batch_size):
-            batch_x = train_x[i : i + batch_size]
-            batch_y = train_y[i : i + batch_size]
+            batch_x = shuffled_x[i : i + batch_size]
+            batch_y = shuffled_y[i : i + batch_size]
 
             sgd.zero_grad()
             output = model(batch_x)
@@ -61,23 +94,23 @@ def benchmark(batch_size, epochs):
 
 def benchmark_adam(batch_size, epochs):
 
-    model = nn.Sequential(
-    nn.Linear(784, 128),
-    nn.ReLU(),
-    nn.Linear(128, 128),
-    nn.ReLU(),
-    nn.Linear(128, 10),
-    )
-
-    adam = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999))
-
+    model = create_model()
+    adam = torch.optim.Adam(model.parameters(), lr=0.001, betas=(0.9, 0.999), weight_decay=1e-4)
     loss_fn = nn.CrossEntropyLoss()
 
     start = time.time()
     for epoch in range(epochs):
+
+        g = torch.Generator()
+        g.manual_seed(seed + epoch)
+        perm = torch.randperm(len(train_x), generator=g)
+
+        shuffled_x = train_x[perm]
+        shuffled_y = train_y[perm]
+
         for i in range(0, len(train_x), batch_size):
-            batch_x = train_x[i : i + batch_size]
-            batch_y = train_y[i : i + batch_size]
+            batch_x = shuffled_x[i : i + batch_size]
+            batch_y = shuffled_y[i : i + batch_size]
 
             adam.zero_grad()
             output = model(batch_x)
