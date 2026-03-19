@@ -277,7 +277,7 @@ $$
 #### Regularised objective
  
 $$
-\mathcal{J} = \mathcal{L}(\hat{y},\, y) + \frac{\lambda}{2N} \sum_{\ell=1}^{L} \left\|W^{(\ell)}
+\mathcal{J} = \mathcal{L}(\hat{y},\, y) + \frac{\lambda}{2N} \sum_{\ell=1}^{L} \left\|W^{(\ell)}\right
 $$
  
 The $\delta$ computation is identical to Section 1. Only the weight update gains a decay term:
