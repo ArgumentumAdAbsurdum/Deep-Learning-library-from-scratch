@@ -319,8 +319,8 @@ Place it into /datasets with name 'fasion_mnist.csv'.
 | Method | Description |
 |--------|-------------|
 | `configure_input_layer(n)` | Set input dimensionality |
-| `add_layer(size, activation)` | Append a fully-connected layer |
-| `configure_loss_function(loss)` | Set training loss. Possible inputs under `loss functions` |
+| `add_layer(size, activation_type)` | Append a fully-connected layer. Possible inputs for activatio_type down below |
+| `configure_loss_function(loss_type)` | Set training loss. Possible for loss_type down below. |
 | `initalise_random_weights()` | Sets random weights in range [-0.1, 0.1] |
 | `initalise_random_weights(begin, end)` | Set randoms weights in range [begin, end] |
 | `initalise_xavier_weights()` | Xavier initialisation |
@@ -329,7 +329,8 @@ Place it into /datasets with name 'fasion_mnist.csv'.
 | `fit(epochs, dataset, optimizer_type, learnrate, batch_size)` | Run training loop and set batch size manually (works only for mini batch GD). See Optimizer types for possible optimizer_types. |
 | `fit(epochs, dataset, ADAM_Optimizer)` | Run training loop with an initalisation of ADAM. See Adam for correct initalisation.|
 | `set_loss_weights(weights)` | Set loss weights with a vector<size_t> with the size of the output layer |
-| `performance(dataset)` | Prints accuracy |
+| `accurracy(dataset)` | Returns accuracy for a dataset |
+| `performance(dataset)` | Prints accuracy for a dataset|
 | `save_weights(path)` | Store weigths in a file |
 | `load_weights(path)` | Read weights from a file |
  
@@ -337,29 +338,114 @@ Place it into /datasets with name 'fasion_mnist.csv'.
  
 | Method | Description |
 |--------|-------------|
+| `Dataset(path)` | Read .csv file with label column 0. |
+| `Dataset(path, label_col)` | Read .csv file with label at index 'label_col' |
+| `Dataset(path, ignore, label_col)` | Read .csv file with label column at index 'label_col' and ignore all lines at indices inside vector 'ignore'.|
+| `standardize()` | Standardize all features |
 | `normalize()` | Min-max normalize all features |
-| `one_hot_encode()` | Convert integer labels to one-hot vectors |
+| `one_hot_encode()` | Convert labels into one hot encoded vectors |
 | `split(ratio)` | Returns `[train, test]` pair |
-| `print_information()` | Print shape and class distribution |
+| `sample_size()` | Returns the amount of samples |
+| `input_dim()` | Rows of one input one input vector |
+| `expected_dim()` | Rows of one expected vector |
+| `print_information()` | Print samples, input dimension and expected dimension. |
 
 ### `Matrix`
 
+This class also allows operations on stacked matrices.
+
 | Method | Description |
 |--------|-------------|
-| `normalize()` | Min-max normalize all features |
-| `one_hot_encode()` | Convert integer labels to one-hot vectors |
-| `split(ratio)` | Returns `[train, test]` pair |
-| `print_information()` | Print shape and class distribution |
+| `Matrix(rows, columns)` | Creates an empty matrix |
+| `Matrix(rows, columns, value)` | Initalises the matrix with all elements as value|
+| `Matrix(rows, columns, values)` | Creates a matrix and sets all elements to the values of the vector 'values' |
+| `Matrix(rows, columns, begin, end)` | Initalises random values from [begin, end] |
+| `create_stackeds_matrix(rows, columns, height)` | Creates an empty stacked matrix. All variations from above work for this function aswell and all functions are implemented for stacked matrices. |
+| `slice_stacked_matrix(start, end)` | Create a view for a stacked matrix from [start,end[  |
+| `reduce_sum(matrix)` | Returns the sum of all stacks of a matrix. |
+| `min()` | Returns a matrix which only contains the min element. |
+| `max()` | Returns a matrix which only contains the min element.|
+| `argmin()` | Returns a vector with which contrains the argmin for each matrix. |
+| `argmax()` | Returns a vector wich contrains the argmax for each matrix. |
+| `set(value)` | Sets all elements to value. |
+| `matrix % matrix` | hadamard product |
+| `matrix * matrix` | matrix multiplication |
+| `matrix +/- matrix` | Addition / Substraction |
+| `matrix */+/- float` | Scaling, adding or substracting by constant values | 
+
+Die linear algebra engine also contains overloaded operators, which allow the user to use matrix multiplication, hadamard products, addition, scaling and automatic broadcasting between different stack sizes. 
+
+
+
+Example:
+
+
+```c++
+    // create a stacked matrix of shape 5x1x100 with random values from 0 to 2.
+    Matrix data = Matrix::create_stacked_matrix(5,1,100, 0, 2.0f);
+
+
+    const float n = (float)data.height();
+    
+    // Calculate the mean by adding all stacked matrices together and dividing by height.
+    Matrix mean = Matrix::reduce_sum(data) * (1/n) ;    // shape 5x1x1
+
+    // Calculate the variance by squaring all elemenets and then adding the square sums toghether.
+    Matrix variance = Matrix::reduce_sum(Matrix::square(data)) * (1/n); // shape 5x1x1
+
+    // Sqrt all values to geht the variance
+    Matrix standard_deviation = Matrix::sqrt(variance);     
+
+
+    // Standardize the data, by using the intern broadcasting definitions:
+    // data -> shape 5x1x100
+    // mean -> shape 5x1x1
+    // standard_deviation -> shape 5x1x1
+    // => the substraction and the hadamard procduct will be broadcasted to all values.
+
+    Matrix standardized_data = (data - mean) % Matrix::reciprocal(standard_deviation); 
+
+```
+
 
 ### `Optimizer types`
+| optimizer_type |
+|--------|
+| `Optimizer::STOCHASTIC_GRADIENT_DESCENT`|
+| `Optimizer::BATCH_GRADIENT_DESCENT` |
+| `Optimizer::MIN_BATCH_GRADIENT_DESCENT` |
 
 ### `Loss functions`
-
+| loss_type |
+|--------|
+| `Activation::IDENTITY` |
+| `Activation::RELU` |        
+| `Activation::ELU` |  
 
 ### `Activation functions`
-
+| activation_type |
+|--------|
+| `Activation::IDENTITY` |
+| `Activation::RELU` |        
+| `Activation::ELU` |          
+| `Activation::SIGMOID` |      
+| `Activation::LOG_SIGMOID` |  
+| `Activation::HARD_SIGMOID` |
+| `Activation::TANH` |        
+| `Activation::SOFTMAX` | 
 
 ### `ADAM`
 
+The default configurations for ADAM:
+```c++
+ADAM_Optimizer adam:
+adam.lr = 0.1;
+adam.beta1 = 0.9
+adam.beta2 = 0.999;
+adam.epsilon = 10e-8;
+adam.lambda = 10e-4;
+adam.batch_size = 64;
+```
+You don't need to specifiy the value, if you wish to use the default one.
 
 ---
