@@ -335,7 +335,7 @@ cmake --build build
 #### 1. MNIST:
 
 
-![MNIST sample digits](https://upload.wikimedia.org/wikipedia/commons/f/f7/MNIST_dataset_example.png)
+![MNIST sample digits](assets/MNIST_dataset_example.png)
 *Figure 1: Sample digits from the MNIST dataset (LeCun et al., 1998). Image by Josef Steppan, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), via Wikimedia Commons.*
 
 
