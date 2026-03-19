@@ -1,50 +1,48 @@
-# DeepModel - A C++ Deep Learning Libary with CUDA support
-> A high performance neural network libary written from scratch in C++, with optional CUDA support.
-It implements a static Backpropagation algorithm to train feed forward neuralnetworks with simple topology.
+# DeepModel - A C++ Deep Learning Library with CUDA Support
+
+> A high-performance neural network library written from scratch in C++, with optional CUDA support.
+> It implements a static backpropagation algorithm to train feed-forward neural networks with simple topology.
 
 ---
+
 ## Overview
-This libary is entirely in C++ implemented and has a custom linear algebra engine, which is optimized for CUDA and CPU-only execution.
 
-Every operation like matrix transposing, matrix multiplication and the entire optimization algorithm is implemented by hand.
-It also contains a own Dataset class, which gives the user the ability to interpret and edit .csv datasets.
-
-The Github repo contains training examples with mnist and fashion-mnist, while being also benchmarked against pytorch.
+This library is implemented entirely in C++ and has a custom linear algebra engine, which is optimized for both CUDA and CPU-only execution.
+Every operation such as matrix transposing, matrix multiplication, and the entire optimization algorithm is implemented by hand.
+It also contains its own Dataset class, which gives the user the ability to read and edit .csv datasets.
+The GitHub repository contains training examples with MNIST and Fashion-MNIST, and also includes benchmarks against PyTorch.
 
 ---
+
 ## Features
 
-
 ### Core Features
+
 - **Backpropagation with L2 regularization**
 - **Weighted loss support**
-- **Random / Xavier / He weight initalization**
+- **Random / Xavier / He weight initialization**
 - **ADAM and ADAMW**
 - **Dataset editing**
-
 
 ### Optimizers
 `ADAM_OPTIMIZER` `STOCHASTIC GRADIENT DESCENT` `BATCH GRADIENT DESCENT` `MINI BATCH GRADIENT DESCENT`
 
-### Activation functions
+### Activation Functions
 `RELU`  `IDENTITY`  `ELU`  `SIGMOID`  `LOG_SIGMOID`  `HARD_SIGMOID`  `TANH`  `SOFTMAX`
 
-### Loss functions
+### Loss Functions
 `CROSS ENTROPY`  `QUADRATIC (MLE)`
 
-
 ---
-## How to build
+
+## How to Build
 
 ### Requirements
+
 `C++17 GNU / Clang` 
-
-`Cmake`
-
-`OpenMP` (Optional for CPU-Only version)
-
+`CMake`
+`OpenMP` (Optional for CPU-only version)
 `CUDA Toolkit` (Optional for CUDA version)
-
 
 ### CPU-only
 
@@ -54,7 +52,6 @@ cmake -B build -DENABLE_CUDA=OFF
 cmake --build build
 ```
 
-
 ### CUDA Support
 
 ```bash
@@ -62,13 +59,13 @@ mkdir build
 cmake -B build -DENABLE_CUDA=ON
 cmake --build build
 ```
-
-### Adding your own files
+### Adding Your Own Files
 
 Add this to the 'CMakeLists.txt':
+
 ```cmake
-add_executable(my_programm my_programm.cpp)
-target_link_libaries(my_program PRIVATE DeepModel)
+add_executable(my_program my_program.cpp)
+target_link_libraries(my_program PRIVATE DeepModel)
 ```
 
 Then run: 
@@ -77,90 +74,73 @@ Then run:
 cmake --build build
 ./build/my_program
 ```
+
 ---
 
-## Quick start
+## Quick Start
 
-There are mutiple examples to view inside /examples.
-Here is the training of a network on the mnist numbers dataset:
+There are multiple examples to view inside /examples.
+Here is the training of a network on the MNIST numbers dataset:
 
-**You need to install the mnist dataset as .csv and place it into the dataset folder to run this program.**
+**You need to install the MNIST dataset as .csv and place it into the dataset folder to run this program.**
+Link: https://github.com/phoebetronic/mnist
 
-link : https://github.com/phoebetronic/mnist
 
 ```cpp
 #include <iostream>
 #include "DeepModel.h"
 #include <filesystem>
-
 // Path to the mnist dataset as .csv
 const std::string path = "datasets/mnist_train.csv";
- 
 int main()
 {
-
     if(!std::filesystem::exists(path))
     {
         std::cerr << "Error : Dataset not found at: " << path << " , please edit path or download & place the mnist_train.csv inside /datasets." << std::endl;
         return 1; 
     }
-
     // Load dataset and edit it
     Dataset data = Dataset(path);
     data.normalize();
     data.one_hot_encode();
-
-    // split the dataset and print information
+    // Split the dataset and print information
     auto [train, test] = data.split(0.8);
     test.print_information();
-
-
-    // Create a new Network
+    // Create a new network
     NeuralNetwork nn;
-
     nn.configure_input_layer(784);
     nn.add_layer(64, Activation::RELU);
     nn.add_layer(64, Activation::RELU);
     nn.add_layer(10,  Activation::SOFTMAX);
     nn.configure_loss_function(Loss::CROSS_ENTROPY);
-    
-    // initalise weights
+    // Initialise weights
     nn.initalise_he_weights();
-    
     // Configure ADAM
     ADAM_Optimizer adam;
     adam.lr = 0.001;
     adam.batch_size = 64;
-
-    // Run the Backpropagation
+    // Run the backpropagation
     nn.fit(30, train, adam);
-
     // Print accuracy
     nn.performance(test);
-
     nn.save_weights("mnist_example_weights.txt");
-
-
 }
 ```
 
 ---
 
+
 ## Benchmark
 
-All configurations were run on a mnist Dataset with 60k samples and the same hyperparameters.
-**Furthermore, all random number calculations were performed on the same seed to ensure the replicability of the results.**
-You can also run them yourself. Everything except the mnist dataset is included in /benchmarks.
-
+All configurations were run on a MNIST dataset with 60k samples and the same hyperparameters.
+**Furthermore, all random number calculations were performed with the same seed to ensure the reproducibility of the results.**
+You can also run them yourself. Everything except the MNIST dataset is included in /benchmarks.
 
 #### Network Architecture:
+
 Neurons                 : 784 x 128 x 128 x 10
-
 Activation functions    : RELU RELU SOFTMAX
-
 Loss function           : Cross entropy
-
-
 
 ### Mini-Batch SGD
  
