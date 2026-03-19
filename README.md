@@ -99,28 +99,36 @@ int main()
         std::cerr << "Error : Dataset not found at: " << path << " , please edit path or download & place the mnist_train.csv inside /datasets." << std::endl;
         return 1; 
     }
+
     // Load dataset and edit it
     Dataset data = Dataset(path);
     data.normalize();
     data.one_hot_encode();
+
     // Split the dataset and print information
     auto [train, test] = data.split(0.8);
     test.print_information();
+
     // Create a new network
     NeuralNetwork nn;
+
     nn.configure_input_layer(784);
     nn.add_layer(64, Activation::RELU);
     nn.add_layer(64, Activation::RELU);
     nn.add_layer(10,  Activation::SOFTMAX);
     nn.configure_loss_function(Loss::CROSS_ENTROPY);
+
     // Initialise weights
     nn.initalise_he_weights();
+
     // Configure ADAM
     ADAM_Optimizer adam;
     adam.lr = 0.001;
     adam.batch_size = 64;
+
     // Run the backpropagation
     nn.fit(30, train, adam);
+
     // Print accuracy
     nn.performance(test);
     nn.save_weights("mnist_example_weights.txt");
@@ -335,7 +343,7 @@ cmake --build build
 
 *Figure 1: Sample digits from the MNIST dataset (LeCun et al., 1998). Image by Josef Steppan, [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/), via Wikimedia Commons.*
 
-In this example we train a network on pictures of digit's to classify them correctly.
+In this example we train a network on pictures of digits to classify them correctly.
 
 **Run with:**
 
@@ -353,7 +361,7 @@ Dataset source: MNIST (LeCun et al., 1998) – available at https://github.com/p
 *Figure 2: Sample images from the Fashion-MNIST dataset (Xiao et al., 2017). Source: [TensorFlow Datasets](https://www.tensorflow.org/datasets/catalog/fashion_mnist), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).*
 
 
-In this example we train a network on pictures of various clothings to classify them correctly.
+In this example we train a network on pictures of various clothing items to classify them correctly.
 
 **Run with:**
 ```bash
@@ -364,6 +372,10 @@ Place it into /datasets with the name 'fashion_mnist.csv'.
 Dataset source: Fashion-MNIST (Xiao et al., 2017) – available at https://github.com/zalandoresearch/fashion-mnist
 
 #### 3 · Linear Algebra:
+
+In this example we create and standardize some data.
+
+**Run with:**
 ```bash
 ./build/linear_algebra
 ```
