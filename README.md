@@ -243,7 +243,7 @@ python3 benchmark/pytorch_benchmark.py
 #### Forward pass
  
 $$
-z^{(\ell)} = W^{(\ell)} a^{(\ell-1)} + b^{(\ell)}, \qquad a^{(\ell)} = f^{(\ell)}\!\left(z^{(\ell)}\right)
+z^{(\ell)} = W^{(\ell)} a^{(\ell-1)} + b^{(\ell)}, \qquad a^{(\ell)} = f^{(\ell)} \left(z^{(\ell)}\right)
 $$
  
 #### Backward pass
@@ -251,7 +251,7 @@ $$
 **Output layer:**
  
 $$
-\delta^{(L)} = \frac{\partial \mathcal{L}}{\partial a^{(L)}} \odot f'^{(L)}\!\left(z^{(L)}\right)
+\delta^{(L)} = \frac{\partial \mathcal{L}}{\partial a^{(L)}} \odot f'^{(L)} \left(z^{(L)}\right)
 $$
  
 **Hidden layers** $(\ell = L-1, \dots, 1)$:
@@ -277,7 +277,7 @@ $$
 #### Regularised objective
  
 $$
-\mathcal{J} = \mathcal{L}(\hat{y},\, y) + \frac{\lambda}{2N} \sum_{\ell=1}^{L} \left\|W^{(\ell)}\right
+\mathcal{J} = \mathcal{L}(\hat{y},\, y) + \frac{\lambda}{2N} \sum_{\ell=1}^{L} \left\|W^{(\ell)}
 $$
  
 The $\delta$ computation is identical to Section 1. Only the weight update gains a decay term:
