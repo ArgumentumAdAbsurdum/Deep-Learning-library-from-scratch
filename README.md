@@ -277,9 +277,9 @@ $$
 #### Regularised objective
  
 $$
-\mathcal{J} = \mathcal{L}(\hat{y},\, y) + \frac{\lambda}{2N} \sum_{\ell=1}^{L} \left\|W^{(\ell)}\right
+\mathcal{J} = \mathcal{L}(\hat{y},\, y) + \frac{\lambda}{2N} \sum_{\ell=1}^{L} \left\|W^{(\ell)}\right\|_F^2
 $$
- 
+
 The $\delta$ computation is identical to Section 1. Only the weight update gains a decay term:
  
 ### Weight update (weight decay + gradient step)
