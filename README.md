@@ -106,6 +106,9 @@ cd Deep-Learning-library-from-scratch
 bash setup/download_mnist.sh
 ```
 
+**The MNIST dataset is downloaded automatically by running bash setup/download_mnist.sh**  
+Dataset source: MNIST (LeCun et al., 1998) – available at https://github.com/phoebetronic/mnist
+
 ### Run CPU-Only
 ```bash
 cmake -B build -DENABLE_CUDA=OFF -DBUILD_EXAMPLES=ON
@@ -187,7 +190,8 @@ git clone https://github.com/ArgumentumAdAbsurdum/Deep-Learning-library-from-scr
 cd Deep-Learning-library-from-scratch
 bash setup/download_mnist.sh
 ```
-
+**The MNIST dataset is downloaded automatically by running bash setup/download_mnist.sh**  
+Dataset source: MNIST (LeCun et al., 1998) – available at https://github.com/phoebetronic/mnist
 
 #### DeepModel : CPU-only
 
@@ -345,10 +349,11 @@ In this example we train a network on pictures of digits to classify them correc
 **Run with:**
 
 ```bash
+bash setup/download_mnist.sh
 ./build/mnist
 ```
-**Requires the MNIST dataset as .csv**  
-Place it into /datasets with the name 'mnist_train.csv'.
+
+**The MNIST dataset is downloaded automatically by running bash setup/download_mnist.sh**  
 Dataset source: MNIST (LeCun et al., 1998) – available at https://github.com/phoebetronic/mnist
 
 #### 2 · Fashion-MNIST:
